@@ -56,16 +56,24 @@
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRaOWsyE02wwANq8zdYgKdvhO7z6rCCrAT_qWzBBMUBhxc6aZj1mbJ6MF-Vdwa0pyJlA/exec';
         let allRoomsData = []; 
-        let pauseRefreshUntil = 0; // 【追加】自動更新を一時停止するためのタイマー変数
+        let pauseRefreshUntil = 0; 
 
         document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
         
         function loadData() {
-            // 入力中、またはデータ送信直後（8秒以内）は自動更新をキャンセルする
             if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
-            if (Date.now() < pauseRefreshUntil) return; // 【追加】送信後8秒間は古いデータの読み込みを防ぐ
+            if (Date.now() < pauseRefreshUntil) return; 
 
-            fetch(GAS_URL).then(response => response.json()).then(data => { if (data && Array.isArray(data)) { allRoomsData = data; renderRooms(); } }).catch(showError);
+            fetch(GAS_URL).then(response => response.json()).then(data => { 
+                // 【重要】通信からデータが返ってきた時点でもう一度タイマーをチェックし、
+                // 通信中にユーザーが操作をしていた場合は、古いデータでの上書きをキャンセルする
+                if (Date.now() < pauseRefreshUntil) return;
+
+                if (data && Array.isArray(data)) { 
+                    allRoomsData = data; 
+                    renderRooms(); 
+                } 
+            }).catch(showError);
         }
         
         function showError(error) {
@@ -136,7 +144,6 @@
             const val = el.type === 'checkbox' ? el.checked : el.value;
             if (col === 11) { const card = el.closest('.room-card'); if (el.checked) card.classList.add('completed'); else card.classList.remove('completed'); }
             
-            // 【追加】データ送信を始めたら、8秒間はバックグラウンドの自動更新をストップさせる
             pauseRefreshUntil = Date.now() + 8000; 
             
             const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; const key = colMap[col];
