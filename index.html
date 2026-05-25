@@ -8,12 +8,13 @@
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
         
-        /* 階数フィルターと更新ボタンを「1行でスッキリ、かつ押しやすく」最適化 */
-        .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 8px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
-        .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; font-size: 0.95rem; white-space: nowrap; }
-        .filter-label input { width: 15px; height: 15px; margin: 0; }
+        /* 階数フィルターと更新ボタンを先ほどの約95%に微縮小 */
+        .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
+        .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
+        .filter-label input { width: 14px; height: 14px; margin: 0; }
         
-        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        /* 更新ボタンを「↻」アイコンに合わせ、全体のサイズ感を調整 */
+        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
 
         /* 通常の客室カード */
