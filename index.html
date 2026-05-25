@@ -8,16 +8,13 @@
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
         
-        /* 階数フィルターと更新ボタン */
-        .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
-        .filter-label { display: flex; align-items: center; gap: 2px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; }
-        .filter-label input { width: 14px; height: 14px; margin: 0; }
+        .filter-container { display: flex; flex-wrap: nowrap; gap: 6px; background: white; padding: 10px 6px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
+        .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 1rem; white-space: nowrap; }
+        .filter-label input { width: 16px; height: 16px; margin: 0; }
         
-        /* ↻ ボタン */
-        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
+        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; font-size: 0.95rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); height: 100%; display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
 
-        /* 通常の客室カード */
         .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s; }
         .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
         
@@ -54,7 +51,7 @@
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderRooms()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderRooms()"> 5</label>
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderRooms()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↻</button>
+            <button class="refresh-btn" onclick="loadData()">更新</button>
         </div>
 
         <div id="room-list-container">
@@ -113,11 +110,16 @@
                 container.innerHTML = '';
                 
                 allRoomsData.forEach(room => {
+                    if (!room.A || String(room.A).trim() === '') return;
+
                     const floor = getFloorNumber(room.A);
                     if (floor !== null && !checkedFloors.includes(floor)) return;
 
+                    // ★データ形式に依存しない、堅牢な完了判定
+                    const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true');
+
                     const card = document.createElement('div');
-                    card.className = room.K ? 'room-card completed' : 'room-card';
+                    card.className = isCompleted ? 'room-card completed' : 'room-card';
                     
                     const jBadge = room.J ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
                     const memoHtml = room.H ? `<div class="memo-box"><strong>備考:</strong> ${room.H}</div>` : '';
@@ -139,6 +141,7 @@
                             <div class="select-group">
                                 <label>摘要</label>
                                 <select onchange="updateValue(this, ${room.rowNumber}, 7)">
+                                    <option value="" ${room.G === '' ? 'selected' : ''}>- なし -</option>
                                     <option value="確認済" ${room.G === '確認済' ? 'selected' : ''}>確認済</option>
                                     <option value="部屋の臭い" ${room.G === '部屋の臭い' ? 'selected' : ''}>部屋の臭い</option>
                                     <option value="忘れ物あり" ${room.G === '忘れ物あり' ? 'selected' : ''}>忘れ物あり</option>
@@ -181,7 +184,7 @@
                             </div>
 
                             <label class="input-label confirm-label">
-                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 11)" ${room.K ? 'checked' : ''}> ★点検完了 (確認)
+                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 11)" ${isCompleted ? 'checked' : ''}> ★点検完了 (確認)
                             </label>
                         </div>
                     `;
