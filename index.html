@@ -15,7 +15,6 @@
         .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s; }
         .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
         
-        /* --- レイアウト変更部分 --- */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
         .header-info { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .room-no { font-size: 1.2rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
@@ -24,13 +23,11 @@
         .inline-select-group { display: flex; align-items: center; gap: 4px; }
         .inline-select-group label { font-size: 0.75rem; color: #666; white-space: nowrap; }
         .inline-select-group select { padding: 4px 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background-color: #f8f9fa; }
-        
-        .checker-group select { max-width: 80px; } /* 確認者プルダウンの幅を制限 */
+        .checker-group select { max-width: 80px; }
 
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .summary-group { flex-grow: 1; }
         .summary-group select { width: 100%; max-width: 250px; }
-        /* -------------------------- */
 
         .status-badge { padding: 3px 6px; border-radius: 4px; background: #e2e8f0; white-space: nowrap; }
         .status-badge.active { background: #3d85c6; color: white; }
@@ -59,10 +56,15 @@
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRaOWsyE02wwANq8zdYgKdvhO7z6rCCrAT_qWzBBMUBhxc6aZj1mbJ6MF-Vdwa0pyJlA/exec';
         let allRoomsData = []; 
+        let pauseRefreshUntil = 0; // 【追加】自動更新を一時停止するためのタイマー変数
+
         document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
         
         function loadData() {
+            // 入力中、またはデータ送信直後（8秒以内）は自動更新をキャンセルする
             if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
+            if (Date.now() < pauseRefreshUntil) return; // 【追加】送信後8秒間は古いデータの読み込みを防ぐ
+
             fetch(GAS_URL).then(response => response.json()).then(data => { if (data && Array.isArray(data)) { allRoomsData = data; renderRooms(); } }).catch(showError);
         }
         
@@ -133,6 +135,10 @@
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
             if (col === 11) { const card = el.closest('.room-card'); if (el.checked) card.classList.add('completed'); else card.classList.remove('completed'); }
+            
+            // 【追加】データ送信を始めたら、8秒間はバックグラウンドの自動更新をストップさせる
+            pauseRefreshUntil = Date.now() + 8000; 
+            
             const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; const key = colMap[col];
             if (key) { const targetRoom = allRoomsData.find(r => r.rowNumber === row); if (targetRoom) targetRoom[key] = val; }
             fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ row: row, col: col, val: val }) }).catch(err => console.error('送信エラー:', err));
