@@ -8,12 +8,12 @@
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
         
-        /* 階数フィルターと更新ボタン（サイズを小さく再調整） */
+        /* 階数フィルターと更新ボタン */
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 2px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; }
         .filter-label input { width: 14px; height: 14px; margin: 0; }
         
-        /* ↻ ボタンのスタイル調整 */
+        /* ↻ ボタン */
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
 
@@ -139,7 +139,6 @@
                             <div class="select-group">
                                 <label>摘要</label>
                                 <select onchange="updateValue(this, ${room.rowNumber}, 7)">
-                                    <option value="" ${room.G === '' ? 'selected' : ''}>- なし -</option>
                                     <option value="確認済" ${room.G === '確認済' ? 'selected' : ''}>確認済</option>
                                     <option value="部屋の臭い" ${room.G === '部屋の臭い' ? 'selected' : ''}>部屋の臭い</option>
                                     <option value="忘れ物あり" ${room.G === '忘れ物あり' ? 'selected' : ''}>忘れ物あり</option>
