@@ -7,40 +7,36 @@
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
-        
-        /* 階数フィルターと更新ボタンを先ほどの約95%に微縮小 */
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .filter-label input { width: 14px; height: 14px; margin: 0; }
-        
-        /* 更新ボタンを「↻」アイコンに合わせ、全体のサイズ感を調整 */
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
-
-        /* 通常の客室カード */
         .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s; }
         .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
         
-        .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        /* --- レイアウト変更部分 --- */
+        .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .header-info { display: flex; align-items: center; gap: 10px; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
-        .room-user { font-size: 0.9rem; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+        .room-user { font-size: 0.9rem; background: #e9ecef; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
         
-        .view-row { display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.85rem; }
-        .status-badge { padding: 3px 6px; border-radius: 4px; background: #e2e8f0; }
-        .status-badge.active { background: #3d85c6; color: white; }
+        .inline-select-group { display: flex; align-items: center; gap: 6px; }
+        .inline-select-group label { font-size: 0.8rem; color: #666; white-space: nowrap; }
+        .inline-select-group select { padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #f8f9fa; }
         
-        .memo-box { font-size: 0.85rem; background: #fff3cd; padding: 6px 10px; border-radius: 4px; margin-bottom: 12px; border: 1px solid #ffeeba; }
+        .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
+        .summary-group { flex-grow: 1; }
+        .summary-group select { width: 100%; max-width: 250px; }
+        /* -------------------------- */
 
+        .status-badge { padding: 3px 6px; border-radius: 4px; background: #e2e8f0; white-space: nowrap; }
+        .status-badge.active { background: #3d85c6; color: white; }
+        .memo-box { font-size: 0.85rem; background: #fff3cd; padding: 6px 10px; border-radius: 4px; margin-bottom: 12px; border: 1px solid #ffeeba; }
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .input-label { background: #f1f5f9; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .input-label input { width: 18px; height: 18px; }
-        
-        .select-group { grid-column: span 1; display: flex; flex-direction: column; gap: 2px; }
-        .select-group label { font-size: 0.75rem; color: #666; margin-left: 2px; }
-        .select-group select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #fff; width: 100%; }
-
         .confirm-label { background: #dcfce7; border: 1px solid #bbf7d0; font-weight: bold; grid-column: span 2; justify-content: center; margin-top: 5px; padding: 12px; }
-        
         .loading { text-align: center; padding: 40px; color: #666; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
     </style>
@@ -54,172 +50,90 @@
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderRooms()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderRooms()"> 5</label>
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderRooms()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↻</button>
+            <button class="refresh-btn" onclick="loadData()">🔄</button>
         </div>
-
-        <div id="room-list-container">
-            <div class="loading">客室データを読み込み中...</div>
-        </div>
+        <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
     </div>
-
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRaOWsyE02wwANq8zdYgKdvhO7z6rCCrAT_qWzBBMUBhxc6aZj1mbJ6MF-Vdwa0pyJlA/exec';
         let allRoomsData = []; 
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            setInterval(loadData, 5000); 
-        });
-
+        document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
+        
         function loadData() {
-            if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) {
-                return; 
-            }
-            
-            fetch(GAS_URL)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && Array.isArray(data)) {
-                        allRoomsData = data;
-                        renderRooms();
-                    }
-                })
-                .catch(showError);
+            if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
+            fetch(GAS_URL).then(response => response.json()).then(data => { if (data && Array.isArray(data)) { allRoomsData = data; renderRooms(); } }).catch(showError);
         }
-
+        
         function showError(error) {
             console.error('通信エラー:', error);
-            if (allRoomsData.length === 0) {
-                const container = document.getElementById('room-list-container');
-                container.innerHTML = `<div class="error-msg">【通信エラー】<br>データを取得できませんでした。電波の良い場所でリロードしてください。</div>`;
-            }
+            if (allRoomsData.length === 0) document.getElementById('room-list-container').innerHTML = `<div class="error-msg">【通信エラー】<br>データを取得できませんでした。電波の良い場所でリロードしてください。</div>`;
         }
-
+        
         function getFloorNumber(roomName) {
             const str = String(roomName);
-            const match3 = str.match(/[1-6]\d{2}/);
-            if (match3) return match3[0].charAt(0);
-            const matchF = str.match(/([1-6])[Ff階]/);
-            if (matchF) return matchF[1];
+            const match3 = str.match(/[1-6]\d{2}/); if (match3) return match3[0].charAt(0);
+            const matchF = str.match(/([1-6])[Ff階]/); if (matchF) return matchF[1];
             return null;
         }
-
+        
         function renderRooms() {
             try {
                 if (allRoomsData.length === 0) return;
-
                 const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-                const container = document.getElementById('room-list-container');
-                container.innerHTML = '';
-                
+                const container = document.getElementById('room-list-container'); container.innerHTML = '';
                 allRoomsData.forEach(room => {
                     if (!room.A || String(room.A).trim() === '') return;
-
                     const floor = getFloorNumber(room.A);
                     if (floor !== null && !checkedFloors.includes(floor)) return;
-
                     const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true');
-
                     const card = document.createElement('div');
                     card.className = isCompleted ? 'room-card completed' : 'room-card';
-                    
                     const jBadge = room.J ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
                     const memoHtml = room.H ? `<div class="memo-box"><strong>備考:</strong> ${room.H}</div>` : '';
-
+                    
                     card.innerHTML = `
                         <div class="room-header">
-                            <div class="room-no">${room.A}号室</div>
-                            <div class="room-user">担当: ${room.B || '未定'}</div>
+                            <div class="header-info">
+                                <div class="room-no">${room.A}号室</div>
+                                <div class="room-user">担当: ${room.B || '未定'}</div>
+                            </div>
+                            <div class="inline-select-group">
+                                <label>確認者</label>
+                                <select onchange="updateValue(this, ${room.rowNumber}, 9)">
+                                    <option value="" ${room.I === '' ? 'selected' : ''}>- 未選択 -</option>
+                                    <option value="着" ${room.I === '着' ? 'selected' : ''}>着</option><option value="フミ" ${room.I === 'フミ' ? 'selected' : ''}>フミ</option><option value="サワ" ${room.I === 'サワ' ? 'selected' : ''}>サワ</option><option value="ユキ" ${room.I === 'ユキ' ? 'selected' : ''}>ユキ</option><option value="ミキ" ${room.I === 'ミキ' ? 'selected' : ''}>ミキ</option><option value="有田" ${room.I === '有田' ? 'selected' : ''}>有田</option><option value="岡田" ${room.I === '岡田' ? 'selected' : ''}>岡田</option><option value="佐賀" ${room.I === '佐賀' ? 'selected' : ''}>佐賀</option><option value="三村" ${room.I === '三村' ? 'selected' : ''}>三村</option><option value="秋富" ${room.I === '秋富' ? 'selected' : ''}>秋富</option><option value="荒川" ${room.I === '荒川' ? 'selected' : ''}>荒川</option><option value="佐々木" ${room.I === '佐々木' ? 'selected' : ''}>佐々木</option><option value="板倉" ${room.I === '板倉' ? 'selected' : ''}>板倉</option><option value="鍋島" ${room.I === '鍋島' ? 'selected' : ''}>鍋島</option><option value="杉岡" ${room.I === '杉岡' ? 'selected' : ''}>杉岡</option><option value="ﾌﾛﾝﾄ" ${room.I === 'ﾌﾛﾝﾄ' ? 'selected' : ''}>ﾌﾛﾝﾄ</option><option value="－－" ${room.I === '－－' ? 'selected' : ''}>－－</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="view-row">${jBadge}</div>
+                        <div class="view-row">
+                            ${jBadge}
+                            <div class="inline-select-group summary-group">
+                                <label>摘要</label>
+                                <select onchange="updateValue(this, ${room.rowNumber}, 7)">
+                                    <option value="" ${room.G === '' ? 'selected' : ''}>- なし -</option>
+                                    <option value="確認済" ${room.G === '確認済' ? 'selected' : ''}>確認済</option><option value="部屋の臭い" ${room.G === '部屋の臭い' ? 'selected' : ''}>部屋の臭い</option><option value="忘れ物あり" ${room.G === '忘れ物あり' ? 'selected' : ''}>忘れ物あり</option><option value="備品破損あり" ${room.G === '備品破損あり' ? 'selected' : ''}>備品破損あり</option><option value="出発前 ※引継済" ${room.G === '出発前 ※引継済' ? 'selected' : ''}>出発前 ※引継済</option><option value="その他 ※連絡済" ${room.G === 'その他 ※連絡済' ? 'selected' : ''}>その他 ※連絡済</option><option value="滞在" ${room.G === '滞在' ? 'selected' : ''}>滞在</option><option value="滞在 ※掃除不要" ${room.G === '滞在 ※掃除不要' ? 'selected' : ''}>滞在 ※掃除不要</option><option value="会食場" ${room.G === '会食場' ? 'selected' : ''}>会食場</option><option value="備品貸出 ※要回収" ${room.G === '備品貸出 ※要回収' ? 'selected' : ''}>備品貸出 ※要回収</option><option value="予備部屋" ${room.G === '予備部屋' ? 'selected' : ''}>予備部屋</option><option value="緊急時用" ${room.G === '緊急時用' ? 'selected' : ''}>緊急時用</option><option value="使用不可" ${room.G === '使用不可' ? 'selected' : ''}>使用不可</option><option value="－－" ${room.G === '－－' ? 'selected' : ''}>－－</option>
+                                </select>
+                            </div>
+                        </div>
                         ${memoHtml}
-                        
                         <div class="edit-grid">
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 3)" ${room.C ? 'checked' : ''}> 忘れ物</label>
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 茶器洗浄</label>
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 備品補充</label>
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> クローゼット</label>
-                            
-                            <div class="select-group">
-                                <label>摘要</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 7)">
-                                    <option value="" ${room.G === '' ? 'selected' : ''}>- なし -</option>
-                                    <option value="確認済" ${room.G === '確認済' ? 'selected' : ''}>確認済</option>
-                                    <option value="部屋の臭い" ${room.G === '部屋の臭い' ? 'selected' : ''}>部屋の臭い</option>
-                                    <option value="忘れ物あり" ${room.G === '忘れ物あり' ? 'selected' : ''}>忘れ物あり</option>
-                                    <option value="備品破損あり" ${room.G === '備品破損あり' ? 'selected' : ''}>備品破損あり</option>
-                                    <option value="出発前 ※引継済" ${room.G === '出発前 ※引継済' ? 'selected' : ''}>出発前 ※引継済</option>
-                                    <option value="その他 ※連絡済" ${room.G === 'その他 ※連絡済' ? 'selected' : ''}>その他 ※連絡済</option>
-                                    <option value="滞在" ${room.G === '滞在' ? 'selected' : ''}>滞在</option>
-                                    <option value="滞在 ※掃除不要" ${room.G === '滞在 ※掃除不要' ? 'selected' : ''}>滞在 ※掃除不要</option>
-                                    <option value="会食場" ${room.G === '会食場' ? 'selected' : ''}>会食場</option>
-                                    <option value="備品貸出 ※要回収" ${room.G === '備品貸出 ※要回収' ? 'selected' : ''}>備品貸出 ※要回収</option>
-                                    <option value="予備部屋" ${room.G === '予備部屋' ? 'selected' : ''}>予備部屋</option>
-                                    <option value="緊急時用" ${room.G === '緊急時用' ? 'selected' : ''}>緊急時用</option>
-                                    <option value="使用不可" ${room.G === '使用不可' ? 'selected' : ''}>使用不可</option>
-                                    <option value="－－" ${room.G === '－－' ? 'selected' : ''}>－－</option>
-                                </select>
-                            </div>
-
-                            <div class="select-group">
-                                <label>確認者</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 9)">
-                                    <option value="" ${room.I === '' ? 'selected' : ''}>- 未選択 -</option>
-                                    <option value="着" ${room.I === '着' ? 'selected' : ''}>着</option>
-                                    <option value="フミ" ${room.I === 'フミ' ? 'selected' : ''}>フミ</option>
-                                    <option value="サワ" ${room.I === 'サワ' ? 'selected' : ''}>サワ</option>
-                                    <option value="ユキ" ${room.I === 'ユキ' ? 'selected' : ''}>ユキ</option>
-                                    <option value="ミキ" ${room.I === 'ミキ' ? 'selected' : ''}>ミキ</option>
-                                    <option value="有田" ${room.I === '有田' ? 'selected' : ''}>有田</option>
-                                    <option value="岡田" ${room.I === '岡田' ? 'selected' : ''}>岡田</option>
-                                    <option value="佐賀" ${room.I === '佐賀' ? 'selected' : ''}>佐賀</option>
-                                    <option value="三村" ${room.I === '三村' ? 'selected' : ''}>三村</option>
-                                    <option value="秋富" ${room.I === '秋富' ? 'selected' : ''}>秋富</option>
-                                    <option value="荒川" ${room.I === '荒川' ? 'selected' : ''}>荒川</option>
-                                    <option value="佐々木" ${room.I === '佐々木' ? 'selected' : ''}>佐々木</option>
-                                    <option value="板倉" ${room.I === '板倉' ? 'selected' : ''}>板倉</option>
-                                    <option value="鍋島" ${room.I === '鍋島' ? 'selected' : ''}>鍋島</option>
-                                    <option value="杉岡" ${room.I === '杉岡' ? 'selected' : ''}>杉岡</option>
-                                    <option value="ﾌﾛﾝﾄ" ${room.I === 'ﾌﾛﾝﾄ' ? 'selected' : ''}>ﾌﾛﾝﾄ</option>
-                                    <option value="－－" ${room.I === '－－' ? 'selected' : ''}>－－</option>
-                                </select>
-                            </div>
-
-                            <label class="input-label confirm-label">
-                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 11)" ${isCompleted ? 'checked' : ''}> ★点検完了 (確認)
-                            </label>
-                        </div>
-                    `;
+                            <label class="input-label confirm-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 11)" ${isCompleted ? 'checked' : ''}> ★点検完了 (確認)</label>
+                        </div>`;
                     container.appendChild(card);
                 });
-            } catch (e) {
-                document.getElementById('room-list-container').innerHTML = `<div class="error-msg">表示エラー: ${e.message}</div>`;
-            }
+            } catch (e) { document.getElementById('room-list-container').innerHTML = `<div class="error-msg">表示エラー: ${e.message}</div>`; }
         }
-
+        
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
-            
-            if (col === 11) {
-                const card = el.closest('.room-card');
-                if (el.checked) card.classList.add('completed');
-                else card.classList.remove('completed');
-            }
-            
-            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' };
-            const key = colMap[col];
-            if (key) {
-                const targetRoom = allRoomsData.find(r => r.rowNumber === row);
-                if (targetRoom) targetRoom[key] = val;
-            }
-
-            fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ row: row, col: col, val: val })
-            }).catch(err => console.error('送信エラー:', err));
-            
+            if (col === 11) { const card = el.closest('.room-card'); if (el.checked) card.classList.add('completed'); else card.classList.remove('completed'); }
+            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; const key = colMap[col];
+            if (key) { const targetRoom = allRoomsData.find(r => r.rowNumber === row); if (targetRoom) targetRoom[key] = val; }
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ row: row, col: col, val: val }) }).catch(err => console.error('送信エラー:', err));
             el.blur(); 
         }
     </script>
