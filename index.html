@@ -13,13 +13,15 @@
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
         
-        .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s; }
+        /* --- カード全体と状態ごとの色設定 --- */
+        .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s, border-color 0.3s; }
         
-        /* 点検完了 (通常) の色: 緑 */
+        /* 1. 点検完了 (通常) の色: 緑 */
         .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
-        
-        /* 点検完了 ＋ 出発済 の色: 淡いオレンジ */
+        /* 2. 点検完了 ＋ 出発済 の色: 淡いオレンジ */
         .room-card.departed-completed { background: #fff7ed; border-left-color: #f97316; }
+        /* 3. 点検完了 ＋ 出発済 ＋ 確認者入力済 の色: 薄グレー背景、グレー枠 */
+        .room-card.final-checked { background: #f1f5f9; border-left-color: #666; }
         
         /* --- ヘッダー（号室・担当・点検ボタン） --- */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
@@ -27,13 +29,12 @@
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
         .room-user { font-size: 0.85rem; background: #e9ecef; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
         
-        /* 点検ボタン（右上） */
+        /* 点検ボタン（右上）のデザインと状態ごとの色 */
         .header-check-label { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
         .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-        
-        /* 状態に応じた点検ボタンの色変化 */
         .room-card.completed .header-check-label { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
         .room-card.departed-completed .header-check-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+        .room-card.final-checked .header-check-label { background: #e2e8f0; border-color: #cbd5e1; color: #475569; }
 
         /* --- 2行目（バッジ・備考） --- */
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
@@ -112,18 +113,23 @@
                 if (allRoomsData.length === 0) return;
                 const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
                 const container = document.getElementById('room-list-container'); container.innerHTML = '';
+                
                 allRoomsData.forEach(room => {
                     if (!room.A || String(room.A).trim() === '') return;
                     const floor = getFloorNumber(room.A);
                     if (floor !== null && !checkedFloors.includes(floor)) return;
                     
+                    // 各種状態の判定
                     const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isDeparted = (room.J === true || String(room.J).toLowerCase() === 'true');
+                    const isPersonChecked = (room.I && room.I !== "着" && room.I !== "－－" && room.I !== "");
                     
                     const card = document.createElement('div');
                     
-                    // クラスの振り分け処理
-                    if (isCompleted && isDeparted) {
+                    // クラスの振り分け処理（優先度順）
+                    if (isCompleted && isDeparted && isPersonChecked) {
+                        card.className = 'room-card final-checked';
+                    } else if (isCompleted && isDeparted) {
                         card.className = 'room-card departed-completed';
                     } else if (isCompleted) {
                         card.className = 'room-card completed';
@@ -179,30 +185,33 @@
         
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
+            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; 
+            const key = colMap[col];
             
-            // アプリ上で点検ボタンを押した際のリアルタイム色変更処理
-            if (col === 11) { 
-                const card = el.closest('.room-card'); 
-                const targetRoom = allRoomsData.find(r => r.rowNumber === row);
-                const isDeparted = targetRoom ? (targetRoom.J === true || String(targetRoom.J).toLowerCase() === 'true') : false;
+            // 操作した内容をローカルデータに即時反映
+            const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
+            if (targetRoom && key) { 
+                targetRoom[key] = val; 
+            }
+            
+            // リアルタイム色変更処理（点検・確認者・摘要などの操作時に即座に色を再計算）
+            const card = el.closest('.room-card');
+            if (card && targetRoom) {
+                const isCompleted = (targetRoom.K === true || String(targetRoom.K).toLowerCase() === 'true');
+                const isDeparted = (targetRoom.J === true || String(targetRoom.J).toLowerCase() === 'true');
+                const isPersonChecked = (targetRoom.I && targetRoom.I !== "着" && targetRoom.I !== "－－" && targetRoom.I !== "");
                 
-                if (el.checked) {
-                    if (isDeparted) {
-                        card.classList.add('departed-completed');
-                        card.classList.remove('completed');
-                    } else {
-                        card.classList.add('completed');
-                        card.classList.remove('departed-completed');
-                    }
-                } else { 
-                    card.classList.remove('completed', 'departed-completed'); 
-                } 
+                card.className = 'room-card'; // 一旦リセット
+                if (isCompleted && isDeparted && isPersonChecked) {
+                    card.classList.add('final-checked');
+                } else if (isCompleted && isDeparted) {
+                    card.classList.add('departed-completed');
+                } else if (isCompleted) {
+                    card.classList.add('completed');
+                }
             }
             
             pauseRefreshUntil = Date.now() + 8000; 
-            
-            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; const key = colMap[col];
-            if (key) { const targetRoom = allRoomsData.find(r => r.rowNumber === row); if (targetRoom) targetRoom[key] = val; }
             fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ row: row, col: col, val: val }) }).catch(err => console.error('送信エラー:', err));
             el.blur(); 
         }
