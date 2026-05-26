@@ -12,8 +12,14 @@
         .filter-label input { width: 14px; height: 14px; margin: 0; }
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
+        
         .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s; }
+        
+        /* 点検完了 (通常) の色: 緑 */
         .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
+        
+        /* 点検完了 ＋ 出発済 の色: 淡いオレンジ */
+        .room-card.departed-completed { background: #fff7ed; border-left-color: #f97316; }
         
         /* --- ヘッダー（号室・担当・点検ボタン） --- */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
@@ -24,7 +30,10 @@
         /* 点検ボタン（右上） */
         .header-check-label { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
         .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+        
+        /* 状態に応じた点検ボタンの色変化 */
         .room-card.completed .header-check-label { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+        .room-card.departed-completed .header-check-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
 
         /* --- 2行目（バッジ・備考） --- */
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
@@ -44,8 +53,8 @@
         /* --- 4行目（摘要・確認者エリア） --- */
         .bottom-controls { display: flex; gap: 10px; border-top: 2px solid #333; padding-top: 12px; margin-top: 4px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; }
-        .group-summary { flex: 55; } /* 摘要を約55% */
-        .group-checker { flex: 45; } /* 確認者を約45% */
+        .group-summary { flex: 55; }
+        .group-checker { flex: 45; }
         .bottom-select-group label { font-size: 0.8rem; color: #666; white-space: nowrap; }
         .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #f8f9fa; }
 
@@ -62,7 +71,7 @@
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderRooms()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderRooms()"> 5</label>
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderRooms()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↺</button>
+            <button class="refresh-btn" onclick="loadData()">🔄</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
     </div>
@@ -107,10 +116,22 @@
                     if (!room.A || String(room.A).trim() === '') return;
                     const floor = getFloorNumber(room.A);
                     if (floor !== null && !checkedFloors.includes(floor)) return;
+                    
                     const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true');
+                    const isDeparted = (room.J === true || String(room.J).toLowerCase() === 'true');
+                    
                     const card = document.createElement('div');
-                    card.className = isCompleted ? 'room-card completed' : 'room-card';
-                    const jBadge = room.J ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
+                    
+                    // クラスの振り分け処理
+                    if (isCompleted && isDeparted) {
+                        card.className = 'room-card departed-completed';
+                    } else if (isCompleted) {
+                        card.className = 'room-card completed';
+                    } else {
+                        card.className = 'room-card';
+                    }
+                    
+                    const jBadge = isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
                     const memoValue = room.H ? room.H : ''; 
                     
                     card.innerHTML = `
@@ -158,7 +179,25 @@
         
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
-            if (col === 11) { const card = el.closest('.room-card'); if (el.checked) card.classList.add('completed'); else card.classList.remove('completed'); }
+            
+            // アプリ上で点検ボタンを押した際のリアルタイム色変更処理
+            if (col === 11) { 
+                const card = el.closest('.room-card'); 
+                const targetRoom = allRoomsData.find(r => r.rowNumber === row);
+                const isDeparted = targetRoom ? (targetRoom.J === true || String(targetRoom.J).toLowerCase() === 'true') : false;
+                
+                if (el.checked) {
+                    if (isDeparted) {
+                        card.classList.add('departed-completed');
+                        card.classList.remove('completed');
+                    } else {
+                        card.classList.add('completed');
+                        card.classList.remove('departed-completed');
+                    }
+                } else { 
+                    card.classList.remove('completed', 'departed-completed'); 
+                } 
+            }
             
             pauseRefreshUntil = Date.now() + 8000; 
             
