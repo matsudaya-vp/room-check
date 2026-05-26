@@ -1,3 +1,8 @@
+承知いたしました。「摘要」と「確認者」の幅の比率が「55対45」になるよう微調整しました。
+
+CSSの `flex` プロパティの数値を変更してバランスを整えています。以下のコードで `index.html` を上書きしてください。
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -44,8 +49,8 @@
         /* --- 4行目（摘要・確認者エリア） --- */
         .bottom-controls { display: flex; gap: 10px; border-top: 2px solid #333; padding-top: 12px; margin-top: 4px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; }
-        .group-summary { flex: 6; } /* 摘要を広く */
-        .group-checker { flex: 4; } /* 確認者を少し狭く（以前の80%程度） */
+        .group-summary { flex: 55; } /* 摘要を約55% */
+        .group-checker { flex: 45; } /* 確認者を約45% */
         .bottom-select-group label { font-size: 0.8rem; color: #666; white-space: nowrap; }
         .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #f8f9fa; }
 
@@ -170,3 +175,5 @@
     </script>
 </body>
 </html>
+
+```
