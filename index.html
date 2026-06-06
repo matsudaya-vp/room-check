@@ -87,11 +87,14 @@
 
         document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
         
-        function loadData() {
+function loadData() {
             if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
             if (Date.now() < pauseRefreshUntil) return; 
 
-            fetch(GAS_URL).then(response => response.json()).then(data => { 
+            // ▼ここを変更：URLの末尾に現在時刻を付与し、ブラウザのキャッシュを強制的に無効化する
+            const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
+
+            fetch(noCacheUrl).then(response => response.json()).then(data => { 
                 if (Date.now() < pauseRefreshUntil) return;
                 if (data && Array.isArray(data)) { 
                     allRoomsData = data; 
