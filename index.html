@@ -7,11 +7,14 @@
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
+        
+        /* フィルタエリア */
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .filter-label input { width: 14px; height: 14px; margin: 0; }
-        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
+        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         
+        /* カード基本設定 */
         .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
         .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
         .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
@@ -19,29 +22,31 @@
         .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
         .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
         
+        /* ヘッダーエリア */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .header-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 
-        /* 点検枠の色をプルダウン(#ccc)に合わせる */
+        /* 点検ボタン (枠の色をプルダウンに合わせる) */
         .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; }
-        .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+        .header-check-label input { width: 18px; height: 18px; margin: 0; }
 
+        /* 出発済・備考行 */
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); }
         .status-badge.active { background: #3d85c6; color: white; }
-        
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
         .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; }
         .memo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* 2x2グリッドレイアウト */
+        /* 2x2グリッド */
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .input-label { background: rgba(255, 255, 255, 0.7); border: 1px solid #ddd; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .input-label input { width: 18px; height: 18px; margin: 0; }
         
+        /* プルダウンエリア */
         .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.1); padding-top: 12px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; }
         .group-summary { flex: 55; }
@@ -65,32 +70,33 @@
             <button class="refresh-btn" onclick="loadData()">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.5（UI・名簿動的同期版）</div>
+        <div class="version-info">Ver.12.5 Final</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
         let allRoomsData = []; 
-        let masterStaffList = []; // スプレの名簿
+        let masterStaffList = []; 
         let pauseRefreshUntil = 0; 
 
         document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
         
-function loadData() {
+        function loadData() {
             if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
             if (Date.now() < pauseRefreshUntil) return; 
 
             const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
-
             fetch(noCacheUrl).then(response => response.json()).then(data => { 
                 if (Date.now() < pauseRefreshUntil) return;
 
-                // ▼ここを修正：Array.isArray(data) ではなく data.rooms があるかを確認する
+                // データの受け取り判定を修正
                 if (data && data.rooms) { 
-                    allRoomsData = data.rooms;       // 客室データを代入
-                    masterStaffList = data.staffList || []; // 確認者名簿を代入
-                    renderRooms();                   // 画面を描画
+                    allRoomsData = data.rooms; 
+                    masterStaffList = data.staffList || [];
+                    renderRooms(); 
                 } 
-            }).catch(showError);
+            }).catch(err => {
+                document.getElementById('room-list-container').innerHTML = `<div style="color:red;padding:20px;">通信エラー: デプロイを確認してください</div>`;
+            });
         }
         
         function getFloorNumber(roomName) {
@@ -108,12 +114,12 @@ function loadData() {
             const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
             const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
             const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-            const cond1 = (!isB_Empty || !isH_Empty); 
+            const isStandby = (!isB_Empty || !isH_Empty); 
 
-            if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
+            if (isStandby && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
             else if (isDeparted && isCompleted) return 'status-departed';  
             else if (isCompleted) return 'status-inspected'; 
-            else if (cond1) return 'status-standby';   
+            else if (isStandby) return 'status-standby';   
             else return 'status-default';   
         }
         
@@ -121,7 +127,8 @@ function loadData() {
             try {
                 if (allRoomsData.length === 0) return;
                 const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-                const container = document.getElementById('room-list-container'); container.innerHTML = '';
+                const container = document.getElementById('room-list-container'); 
+                container.innerHTML = '';
                 
                 allRoomsData.forEach(room => {
                     const floor = getFloorNumber(room.A);
@@ -131,7 +138,7 @@ function loadData() {
                     const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
                     
-                    // 確認者名簿のプルダウン作成
+                    // 名簿プルダウン生成
                     let staffOptions = `<option value="">-未選択-</option>`;
                     masterStaffList.forEach(name => {
                         const selected = (room.J === name) ? 'selected' : '';
@@ -181,7 +188,7 @@ function loadData() {
                         </div>`;
                     container.appendChild(card);
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Render Error:", e); }
         }
         
         function updateValue(el, row, col) {
@@ -189,8 +196,10 @@ function loadData() {
             const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
             const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
             if (targetRoom) targetRoom[colMap[col]] = val;
+            
             const card = el.closest('.room-card');
             if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
+            
             pauseRefreshUntil = Date.now() + 8000; 
             fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) });
         }
