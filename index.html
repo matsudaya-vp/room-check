@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ</title>
+    <title>客室点検アプリ Ver.14.0</title>
     <style>
-        /* CSSはVer.12.7を完全維持 */
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .filter-label input { width: 14px; height: 14px; margin: 0; }
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
-        .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
-        .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
-        .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
-        .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
-        .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
+        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: background 0.2s; }
+        .status-default { background: #b0b5b9; border-left-color: #6b7280; }
+        .status-standby { background: #e2e8f0; border-left-color: #666; }
+        .status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
+        .status-departed { background: #fff7ed; border-left-color: #f97316; }
+        .status-final { background: #f0fdf4; border-left-color: #22c55e; }
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .header-info { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
-        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; color: #555; }
+        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; border: 1px solid #ccc; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; color: #333; }
-        .header-check-label input { width: 18px; height: 18px; margin: 0; }
+        .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; }
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); font-weight: bold; }
         .status-badge.active { background: #3d85c6; color: white; }
@@ -33,13 +31,10 @@
         .memo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .input-label { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .input-label input { width: 18px; height: 18px; margin: 0; }
-        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.05); padding-top: 12px; }
-        .bottom-select-group { display: flex; align-items: center; gap: 6px; }
-        .group-summary { flex: 55; }
-        .group-checker { flex: 45; }
-        .bottom-select-group label { font-size: 0.8rem; color: #666; font-weight: bold; }
-        .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background-color: #fff; height: 36px; }
+        .bottom-controls { display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 12px; }
+        .bottom-select-group { display: flex; align-items: center; gap: 6px; flex: 1; }
+        .bottom-select-group label { font-size: 0.8rem; color: #666; font-weight: bold; white-space: nowrap; }
+        .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background: #fff; height: 36px; }
         .loading { text-align: center; padding: 40px; color: #666; }
         .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
     </style>
@@ -47,172 +42,133 @@
 <body>
     <div id="app-container">
         <div class="filter-container">
-            <label class="filter-label"><input type="checkbox" value="1" checked onchange="renderRooms()"> 1</label>
-            <label class="filter-label"><input type="checkbox" value="2" checked onchange="renderRooms()"> 2</label>
-            <label class="filter-label"><input type="checkbox" value="3" checked onchange="renderRooms()"> 3</label>
-            <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderRooms()"> 4</label>
-            <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderRooms()"> 5</label>
-            <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderRooms()"> 6</label>
-            <button class="refresh-btn" onclick="manualRefresh()">↻</button>
+            <label class="filter-label"><input type="checkbox" value="1" checked onchange="renderAll()"> 1</label>
+            <label class="filter-label"><input type="checkbox" value="2" checked onchange="renderAll()"> 2</label>
+            <label class="filter-label"><input type="checkbox" value="3" checked onchange="renderAll()"> 3</label>
+            <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderAll()"> 4</label>
+            <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderAll()"> 5</label>
+            <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderAll()"> 6</label>
+            <button class="refresh-btn" onclick="fetchData(true)">↻</button>
         </div>
-        <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.13.0 Speed Optimized</div>
+        <div id="room-list-container"><div class="loading">読込中...</div></div>
+        <div class="version-info">Ver.14.0 Performance Master</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
-        let allRoomsData = []; 
-        let masterStaffList = []; 
-        let pauseRefreshUntil = 0; 
-        let lastRenderData = ""; // 前回描画時のデータ（差分比較用）
-        let isFetching = false;  // 通信中フラグ
+        let allRooms = []; 
+        let listStaff = [], listSummary = [], listChecker = [];
+        let pauseUntil = 0; 
 
-        const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
-        const fallbackList = ["着", "フミ", "サワ", "ユキ", "ミキ", "有田", "岡田", "佐賀", "三村", "秋富", "荒川", "佐々木", "板倉", "鍋島", "杉岡", "ﾌﾛﾝﾄ", "－－"];
+        document.addEventListener('DOMContentLoaded', () => { fetchData(true); setInterval(() => fetchData(false), 5000); });
 
-        document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
-        
-        function manualRefresh() {
-            lastRenderData = ""; // キャッシュをクリアして強制再描画
-            loadData();
+        async function fetchData(loadLists) {
+            if (Date.now() < pauseUntil || (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT'))) return;
+            try {
+                const res = await fetch(`${GAS_URL}?lists=${loadLists}&t=${Date.now()}`);
+                const data = await res.json();
+                if (data.lists) {
+                    listStaff = data.lists.staff; listSummary = data.lists.summary; listChecker = data.lists.checker;
+                }
+                updateData(data.rooms);
+            } catch (e) { console.error("Fetch failed", e); }
         }
 
-        function loadData() {
-            // 入力中または通信中はスキップ
-            if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
-            if (Date.now() < pauseRefreshUntil || isFetching) return; 
-
-            isFetching = true;
-            fetch(GAS_URL + '?t=' + Date.now()).then(res => res.json()).then(data => { 
-                isFetching = false;
-                if (Date.now() < pauseRefreshUntil) return;
-
-                // 形式判別
-                const newData = data.rooms || (Array.isArray(data) ? data : []);
-                const newStaff = data.staffList || [];
-
-                // 【パフォーマンス向上】データに変更があるか、または初期描画かチェック
-                const currentDataString = JSON.stringify(newData) + JSON.stringify(newStaff) + getFilterState();
-                if (currentDataString === lastRenderData) return; // 変更がなければ描画をスキップ
-
-                allRoomsData = newData;
-                masterStaffList = newStaff;
-                lastRenderData = currentDataString;
-
-                if (allRoomsData.length > 0) renderRooms();
-            }).catch(e => {
-                isFetching = false;
-                console.error(e);
+        function updateData(newRooms) {
+            if (!newRooms) return;
+            const container = document.getElementById('room-list-container');
+            if (allRooms.length === 0) {
+                allRooms = newRooms; renderAll(); return;
+            }
+            newRooms.forEach((newRoom, i) => {
+                const oldRoom = allRooms[i];
+                if (JSON.stringify(newRoom) !== JSON.stringify(oldRoom)) {
+                    allRooms[i] = newRoom;
+                    const card = document.getElementById(`room-${newRoom.rowNumber}`);
+                    if (card) updateCardSurgical(card, newRoom);
+                }
             });
         }
-        
-        // フィルタの状態を取得（データが同じでもフィルタが変われば再描画が必要なため）
-        function getFilterState() {
-            return Array.from(document.querySelectorAll('.filter-container input')).map(cb => cb.checked).join('');
+
+        function getStatus(r) {
+            const isS = (String(r.B||"").trim() !== "－－" && String(r.B||"").trim() !== "") || (String(r.H||"").trim() !== "－－" && String(r.H||"").trim() !== "");
+            const isP = (String(r.J||"").trim() !== "" && !["－－", "ーー", "着"].includes(String(r.J).trim()));
+            const isD = (r.K === true || String(r.K).toLowerCase() === 'true');
+            const isC = (r.L === true || String(r.L).toLowerCase() === 'true');
+            if (isS && isP && isD && isC) return 'status-final';
+            if (isD && isC) return 'status-departed';
+            if (isC) return 'status-inspected';
+            if (isS) return 'status-standby';
+            return 'status-default';
         }
 
-        function getFloorNumber(roomName) {
-            const str = String(roomName);
-            const match = str.match(/^[1-6]/);
-            return match ? match[0] : null;
+        function renderAll() {
+            const container = document.getElementById('room-list-container');
+            const checked = Array.from(document.querySelectorAll('.filter-container input:checked')).map(c => c.value);
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            allRooms.forEach(room => {
+                const floor = String(room.A).charAt(0);
+                if (!checked.includes(floor)) return;
+                const card = document.createElement('div');
+                card.id = `room-${room.rowNumber}`;
+                card.className = `room-card ${getStatus(room)}`;
+                updateCardSurgical(card, room);
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
         }
-        
-        function getRoomStatusClass(room) {
-            const valB = String(room.B || "").trim();
-            const valH = String(room.H || "").trim();
-            const valJ = String(room.J || "").trim();
+
+        function updateCardSurgical(card, room) {
+            const isE = (room.C === true || String(room.C).toLowerCase() === 'true');
             const isD = (room.K === true || String(room.K).toLowerCase() === 'true');
             const isC = (room.L === true || String(room.L).toLowerCase() === 'true');
-            const isB_E = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-            const isH_E = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
-            const isP = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-            const isS = (!isB_E || !isH_E); 
-            if (isS && isP && isD && isC) return 'status-final';     
-            if (isD && isC) return 'status-departed';  
-            if (isC) return 'status-inspected'; 
-            if (isS) color = 'status-standby';
-            if (isS) return 'status-standby';   
-            return 'status-default';   
-        }
-        
-        function renderRooms() {
-            // 描画が必要な時だけ呼ばれる
-            const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-            const container = document.getElementById('room-list-container'); 
-            const fragment = document.createDocumentFragment();
             
-            allRoomsData.forEach(room => {
-                const floor = getFloorNumber(room.A);
-                if (floor !== null && !checkedFloors.includes(floor)) return;
-                
-                const isE = (room.C === true || String(room.C).toLowerCase() === 'true');
-                const isD = (room.K === true || String(room.K).toLowerCase() === 'true');
-                const isC = (room.L === true || String(room.L).toLowerCase() === 'true');
-                
-                let hOptions = `<option value="">- なし -</option>`;
-                summaryList.forEach(h => hOptions += `<option value="${h}" ${room.H===h?'selected':''}>${h}</option>`);
-
-                let jOptions = `<option value="">-未選択-</option>`;
-                let currentJ = String(room.J || "").trim();
-                let found = false;
-                let useList = masterStaffList.length > 0 ? masterStaffList : fallbackList;
-                useList.forEach(n => {
-                    const selected = (currentJ === n) ? 'selected' : '';
-                    if(selected) found = true;
-                    jOptions += `<option value="${n}" ${selected}>${n}</option>`;
-                });
-                if(!found && currentJ !== "" && currentJ !== "－－") {
-                    jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
-                }
-
-                const card = document.createElement('div');
-                card.className = `room-card ${getRoomStatusClass(room)}`;
-                card.innerHTML = `
-                    <div class="room-header">
-                        <div class="header-info">
-                            <div class="room-no">${room.A}号室</div>
-                            <div class="room-user">担当: ${room.B || '－－'}</div>
-                            ${isE ? '<span class="early-badge">E</span>' : ''}
-                        </div>
-                        <label class="header-check-label">
-                            <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検
-                        </label>
+            card.className = `room-card ${getStatus(room)}`;
+            card.innerHTML = `
+                <div class="room-header">
+                    <div class="header-info">
+                        <div class="room-no">${room.A}号室</div>
+                        <div class="room-user">${room.B || '－－'}</div>
+                        ${isE ? '<span class="early-badge">E</span>' : ''}
                     </div>
-                    <div class="view-row">
-                        ${isD ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                        <div class="memo-inline">
-                            <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
-                        </div>
-                    </div>
-                    <div class="edit-grid">
-                        <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
-                        <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
-                        <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                        <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
-                    </div>
-                    <div class="bottom-controls">
-                        <div class="bottom-select-group group-summary"><label>摘要</label><select onchange="updateValue(this, ${room.rowNumber}, 8)">${hOptions}</select></div>
-                        <div class="bottom-select-group group-checker"><label>確認者</label><select onchange="updateValue(this, ${room.rowNumber}, 10)">${jOptions}</select></div>
-                    </div>`;
-                fragment.appendChild(card);
-            });
-            container.innerHTML = '';
-            container.appendChild(fragment);
+                    <label class="header-check-label">
+                        <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検
+                    </label>
+                </div>
+                <div class="view-row">
+                    ${isD ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
+                    <div class="memo-inline"><span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span></div>
+                </div>
+                <div class="edit-grid">
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
+                </div>
+                <div class="bottom-controls">
+                    <div class="bottom-select-group"><label>摘要</label><select onchange="updateValue(this, ${room.rowNumber}, 8)">${getOptions(listSummary, room.H)}</select></div>
+                    <div class="bottom-select-group"><label>確認者</label><select onchange="updateValue(this, ${room.rowNumber}, 10)">${getOptions(listChecker, room.J)}</select></div>
+                </div>`;
         }
-        
+
+        function getOptions(list, current) {
+            let opts = `<option value="">-</option>`;
+            list.forEach(i => opts += `<option value="${i}" ${current==i?'selected':''}>${i}</option>`);
+            if (current && !list.includes(current)) opts += `<option value="${current}" selected>${current}</option>`;
+            return opts;
+        }
+
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
-            const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
-            const target = allRoomsData.find(r => r.rowNumber === row); 
-            if (target) target[colMap[col]] = val;
-
-            // ローカルの色変更（即時反映）
-            const card = el.closest('.room-card');
-            if (card && target) card.className = `room-card ${getRoomStatusClass(target)}`;
-            
-            pauseRefreshUntil = Date.now() + 8000; 
-            lastRenderData = ""; // 通信成功後に再描画を許可するためリセット
-            
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) });
+            const room = allRooms.find(r => r.rowNumber === row);
+            const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' };
+            if (room) {
+                room[colMap[col]] = val;
+                const card = document.getElementById(`room-${row}`);
+                if (card) card.className = `room-card ${getStatus(room)}`; // 楽観的UI更新
+            }
+            pauseUntil = Date.now() + 8000;
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val }) });
         }
     </script>
 </body>
