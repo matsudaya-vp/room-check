@@ -7,53 +7,38 @@
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
-        
-        /* フィルタエリア */
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .filter-label input { width: 14px; height: 14px; margin: 0; }
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        
-        /* カード基本設定 */
         .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
         .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
         .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
         .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
         .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
         .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
-        
-        /* ヘッダーエリア（順序：部屋番号 → 担当 → Eマーク） */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .header-info { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; color: #555; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-
-        /* 点検ボタン（枠の色をプルダウンの #ccc に統一） */
         .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; color: #333; }
         .header-check-label input { width: 18px; height: 18px; margin: 0; }
-
-        /* 出発済・備考行 */
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); font-weight: bold; }
         .status-badge.active { background: #3d85c6; color: white; }
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
         .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; }
         .memo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* 2x2グリッドレイアウト */
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .input-label { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .input-label input { width: 18px; height: 18px; margin: 0; }
-        
-        /* 下部プルダウン */
         .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.05); padding-top: 12px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; }
         .group-summary { flex: 55; }
         .group-checker { flex: 45; }
         .bottom-select-group label { font-size: 0.8rem; color: #666; font-weight: bold; }
         .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background-color: #fff; height: 36px; }
-
         .loading { text-align: center; padding: 40px; color: #666; }
         .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
     </style>
@@ -70,7 +55,7 @@
             <button class="refresh-btn" onclick="loadData()">?</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.5 Final Master</div>
+        <div class="version-info">Ver.12.5 Final Fix</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
@@ -88,27 +73,17 @@
             fetch(noCacheUrl).then(response => response.json()).then(data => { 
                 if (Date.now() < pauseRefreshUntil) return;
 
-                // --- ここでデータの形式を自動判別（新旧両対応） ---
                 if (data && data.rooms) {
-                    // 新しい形式（オブジェクトの中にroomsがある）
                     allRoomsData = data.rooms;
                     masterStaffList = data.staffList || [];
                 } else if (Array.isArray(data)) {
-                    // 古い形式（単なる配列）
                     allRoomsData = data;
-                    masterStaffList = [];
                 }
 
                 if (allRoomsData && allRoomsData.length > 0) {
                     renderRooms(); 
                 }
-            }).catch(err => {
-                console.error("Fetch error:", err);
-                // エラー時でも既存データがあれば消さない
-                if(allRoomsData.length === 0) {
-                   document.getElementById('room-list-container').innerHTML = `<div style="color:red;padding:20px;">接続待ち...（GASの応答を確認中）</div>`;
-                }
-            });
+            }).catch(err => console.error("Fetch error:", err));
         }
         
         function getFloorNumber(roomName) {
@@ -150,18 +125,25 @@
                     const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
                     
-                    // 名簿プルダウンの生成
+                    // --- 確認者プルダウンの生成ロジック ---
                     let staffOptions = `<option value="">-未選択-</option>`;
-                    if (masterStaffList.length > 0) {
-                        masterStaffList.forEach(name => {
-                            const selected = (room.J === name) ? 'selected' : '';
-                            staffOptions += `<option value="${name}" ${selected}>${name}</option>`;
-                        });
-                    } else {
-                        // 名簿がまだ届いていない場合は、現在の値を表示
-                        if(room.J && room.J !== "－－") {
-                            staffOptions += `<option value="${room.J}" selected>${room.J}</option>`;
-                        }
+                    let currentVal = String(room.J || "").trim();
+                    let foundInList = false;
+
+                    // 名簿リストから選択肢を作成
+                    masterStaffList.forEach(name => {
+                        const n = String(name).trim();
+                        if (n === "") return;
+                        const selected = (currentVal === n) ? 'selected' : '';
+                        if (selected) foundInList = true;
+                        staffOptions += `<option value="${n}" ${selected}>${n}</option>`;
+                    });
+
+                    // シート上の値が名簿にない場合、消えないように選択肢として追加（「着」や「－－」など）
+                    if (!foundInList && currentVal !== "" && currentVal !== "－－") {
+                        staffOptions += `<option value="${currentVal}" selected>${currentVal}</option>`;
+                    } else if (!foundInList && currentVal === "－－") {
+                        staffOptions += `<option value="－－" selected>－－</option>`;
                     }
 
                     const card = document.createElement('div');
@@ -195,9 +177,9 @@
                                 <select onchange="updateValue(this, ${room.rowNumber}, 8)">
                                     <option value="" ${room.H === '' ? 'selected' : ''}>- なし -</option>
                                     <option value="確認済" ${room.H === '確認済' ? 'selected' : ''}>確認済</option>
-                                    <option value="－－" ${room.H === '－－' ? 'selected' : ''}>－－</option>
                                     <option value="部屋の臭い" ${room.H === '部屋の臭い' ? 'selected' : ''}>部屋の臭い</option>
                                     <option value="忘れ物あり" ${room.H === '忘れ物あり' ? 'selected' : ''}>忘れ物あり</option>
+                                    <option value="－－" ${room.H === '－－' ? 'selected' : ''}>－－</option>
                                 </select>
                             </div>
                             <div class="bottom-select-group group-checker">
@@ -224,8 +206,7 @@
             if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
             
             pauseRefreshUntil = Date.now() + 8000; 
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
-            .catch(e => console.error("Update Error:", e));
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) });
         }
     </script>
 </body>
