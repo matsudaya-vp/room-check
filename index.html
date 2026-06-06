@@ -3,37 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検 Ver.14.5</title>
+    <title>客室点検 Ver.14.6</title>
     <style>
+        /* Ver.12.7のデザインを完全復旧 */
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
-        #app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        #app-container { max-width: 600px; margin: 0 auto; }
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
         .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: background 0.3s; }
         .status-default { background: #b0b5b9; border-left-color: #6b7280; }
         .status-standby { background: #e2e8f0; border-left-color: #666; }
         .status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
         .status-departed { background: #fff7ed; border-left-color: #f97316; }
         .status-final { background: #f0fdf4; border-left-color: #22c55e; }
+        
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .header-info { display: flex; align-items: center; gap: 6px; }
-        .room-no { font-size: 1.3rem; font-weight: bold; }
-        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; border: 1px solid #ccc; }
+        .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
+        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; border: 1px solid #ccc; color: #555; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 2px; }
-        .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; }
+        .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; }
+        
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); font-weight: bold; }
         .status-badge.active { background: #3d85c6; color: white; }
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; overflow: hidden; }
+        .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; }
         .memo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .input-label { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-        .bottom-controls { display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 12px; }
+        .input-label { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        
+        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.05); padding-top: 12px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; flex: 1; }
-        .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; height: 36px; }
-        #diagnostic-console { font-size: 11px; color: #fff; background: #333; padding: 10px; border-radius: 6px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; overflow-x: hidden; }
-        .error-box { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 6px; font-size: 12px; margin: 10px 0; }
+        .bottom-select-group label { font-size: 0.8rem; color: #666; font-weight: bold; white-space: nowrap; }
+        .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background-color: #fff; height: 36px; }
+        
+        #diagnostic-console { font-size: 10px; color: #fff; background: #333; padding: 8px; border-radius: 6px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -47,13 +55,14 @@
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderAll()"> 6</label>
             <button class="refresh-btn" onclick="fetchData(true)">↻</button>
         </div>
-        <div id="room-list-container" style="text-align:center; padding:40px;">読込中...</div>
-        <div id="diagnostic-console">READY (Ver.14.5)</div>
+        <div id="room-list-container" style="text-align:center; padding:40px;">客室データを読込中...</div>
+        <div id="diagnostic-console">READY (Ver.14.6)</div>
     </div>
 
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
-        let allRooms = [], lists = { staff: [], summary: [], checker: [] };
+        let allRooms = []; 
+        let masterLists = { staff: [], summary: [], checker: [] }; // リストを永続保持
         let pauseUntil = 0, isFetching = false;
 
         function log(msg) {
@@ -61,12 +70,11 @@
             if (el) el.innerText = "[" + new Date().toLocaleTimeString() + "] " + msg;
         }
 
-        window.onerror = (m, u, l) => log("FATAL_JS_ERROR: " + m + " (Line " + l + ")");
+        window.onerror = (m, u, l) => log("ERROR: " + m + " (L" + l + ")");
 
         document.addEventListener('DOMContentLoaded', () => {
-            log("BOOT: OK");
-            fetchData(true);
-            setInterval(() => fetchData(false), 5000);
+            fetchData(true); 
+            setInterval(() => fetchData(false), 5000); 
         });
 
         async function fetchData(loadLists) {
@@ -77,28 +85,23 @@
             try {
                 const res = await fetch(`${GAS_URL}?lists=${loadLists}&t=${Date.now()}`);
                 const text = await res.text();
-                
-                // --- 判定を緩和: { または [ で始まればJSONとみなす ---
                 const trimmed = text.trim();
-                if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-                    // HTML（エラー画面）が返ってきた場合、最初の100文字を診断に表示
-                    throw new Error("SERVER_NOT_JSON: " + trimmed.substring(0, 100));
-                }
+                if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) throw new Error("サーバー応答が正しくありません");
 
                 const data = JSON.parse(trimmed);
-                if (data.error) throw new Error("GAS_LOGIC_ERROR: " + data.message);
+                if (data.error) throw new Error(data.error);
 
-                if (data.lists) lists = data.lists;
-                // 配列形式（旧）でもオブジェクト形式（新）でも対応
-                const roomArray = Array.isArray(data) ? data : data.rooms;
-                if (roomArray) syncRooms(roomArray);
-                
-                log("SYNC: OK");
-            } catch (e) {
-                log("SYNC_ERR: " + e.message);
-                if (allRooms.length === 0) {
-                    document.getElementById('room-list-container').innerHTML = `<div class="error-box"><b>読込失敗</b><br>${e.message}</div>`;
+                // リストが送られてきた場合のみ更新（既存リストを消さない）
+                if (data.lists) {
+                    masterLists = data.lists;
+                    log("LIST同期: OK");
                 }
+                
+                if (data.rooms) syncRooms(data.rooms);
+                log("ROOM同期: OK");
+            } catch (e) {
+                log("通信失敗: " + e.message);
+                if (allRooms.length === 0) document.getElementById('room-list-container').innerHTML = "ERROR: " + e.message;
             } finally {
                 isFetching = false;
             }
@@ -121,7 +124,7 @@
             });
         }
 
-        function getStatus(r) {
+        function getStatusClass(r) {
             const b = String(r.B||"").trim(), h = String(r.H||"").trim(), j = String(r.J||"").trim();
             const isS = (b !== "－－" && b !== "") || (h !== "－－" && h !== "");
             const isP = (j !== "" && !["－－","ーー","着"].includes(j));
@@ -151,48 +154,69 @@
 
         function updateCard(card, r) {
             const isE = (r.C === true || String(r.C) === 'true'), isD = (r.K === true || String(r.K) === 'true'), isC = (r.L === true || String(r.L) === 'true');
-            card.className = "room-card " + getStatus(r);
+            card.className = "room-card " + getStatusClass(r);
             card.innerHTML = `
                 <div class="room-header">
-                    <div class="header-info"><div class="room-no">${r.A}</div><div class="room-user">担: ${r.B || '－－'}</div>${isE ? '<span class="early-badge">E</span>' : ''}</div>
-                    <label class="header-check-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検</label>
+                    <div class="header-info">
+                        <div class="room-no">${r.A}号室</div>
+                        <div class="room-user">担当: ${r.B || '－－'}</div>
+                        ${isE ? '<span class="early-badge">E</span>' : ''}
+                    </div>
+                    <label class="header-check-label">
+                        <input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検
+                    </label>
                 </div>
-                <div class="view-row">${isD ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                    <div class="memo-inline"><span class="memo-text">${r.I || ''}</span></div></div>
+                <div class="view-row">
+                    ${isD ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
+                    <div class="memo-inline"><span class="memo-label">備考</span><span class="memo-text">${r.I || ''}</span></div>
+                </div>
                 <div class="edit-grid">
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 4)" ${r.D ? 'checked' : ''}> 忘れ物</label>
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 5)" ${r.E ? 'checked' : ''}> 茶器洗浄</label>
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 6)" ${r.F ? 'checked' : ''}> 備品補充</label>
-                    <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 7)" ${r.G ? 'checked' : ''}> クロゼット</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 7)" ${r.G ? 'checked' : ''}> クローゼット</label>
                 </div>
                 <div class="bottom-controls">
-                    <div class="bottom-select-group"><select onchange="updateVal(this, ${r.rowNumber}, 8)">${getOpts(lists.summary, r.H)}</select></div>
-                    <div class="bottom-select-group"><select onchange="updateVal(this, ${r.rowNumber}, 10)">${getOpts(lists.checker, r.J)}</select></div>
+                    <div class="bottom-select-group">
+                        <label>摘要</label>
+                        <select onchange="updateVal(this, ${r.rowNumber}, 8)">${getOpts(masterLists.summary, r.H)}</select>
+                    </div>
+                    <div class="bottom-select-group">
+                        <label>確認者</label>
+                        <select onchange="updateVal(this, ${r.rowNumber}, 10)">${getOpts(masterLists.checker, r.J)}</select>
+                    </div>
                 </div>`;
         }
 
         function getOpts(list, cur) {
             let opts = '<option value="">-</option>';
             const safe = Array.isArray(list) ? list : [];
-            safe.forEach(v => opts += `<option value="${v}" ${cur==v?'selected':''}>${v}</option>`);
-            if (cur && cur!=="" && cur!=="－－" && !safe.includes(cur)) opts += `<option value="${cur}" selected>${cur}</option>`;
+            const curStr = String(cur || "").trim();
+            safe.forEach(v => {
+                const sv = String(v).trim();
+                if (sv === "") return;
+                opts += `<option value="${sv}" ${curStr === sv ? 'selected' : ''}>${sv}</option>`;
+            });
+            if (curStr !== "" && curStr !== "－－" && !safe.includes(curStr)) {
+                opts += `<option value="${curStr}" selected>${curStr}</option>`;
+            }
             return opts;
         }
 
         async function updateVal(el, row, col) {
             const v = el.type === 'checkbox' ? el.checked : el.value;
-            const r = allRooms.find(r => r.rowNumber === row);
+            const r = allRooms.find(room => room.rowNumber === row);
             const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' };
             if (r) {
                 r[colMap[col]] = v;
                 const card = document.getElementById("room-" + row);
-                if (card) card.className = "room-card " + getStatus(r);
+                if (card) card.className = "room-card " + getStatusClass(r);
             }
             pauseUntil = Date.now() + 8000;
             try {
                 await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val: v }) });
-                log("POST: OK");
-            } catch (e) { log("POST_ERR: " + e.message); }
+                log("データ送信完了");
+            } catch (e) { log("送信失敗: " + e.message); }
         }
     </script>
 </body>
