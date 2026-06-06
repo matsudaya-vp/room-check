@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検 Ver.14.4</title>
+    <title>客室点検 Ver.14.5</title>
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
-        #app-container { max-width: 600px; margin: 0 auto; }
+        #app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
         .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: background 0.2s; }
+        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: background 0.3s; }
         .status-default { background: #b0b5b9; border-left-color: #6b7280; }
         .status-standby { background: #e2e8f0; border-left-color: #666; }
         .status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
@@ -32,7 +32,8 @@
         .bottom-controls { display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 12px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; flex: 1; }
         .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; height: 36px; }
-        #diagnostic-console { font-size: 11px; color: #fff; background: #333; padding: 10px; border-radius: 6px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; }
+        #diagnostic-console { font-size: 11px; color: #fff; background: #333; padding: 10px; border-radius: 6px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; overflow-x: hidden; }
+        .error-box { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 6px; font-size: 12px; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -47,7 +48,7 @@
             <button class="refresh-btn" onclick="fetchData(true)">↻</button>
         </div>
         <div id="room-list-container" style="text-align:center; padding:40px;">読込中...</div>
-        <div id="diagnostic-console">READY (Ver.14.4)</div>
+        <div id="diagnostic-console">READY (Ver.14.5)</div>
     </div>
 
     <script>
@@ -60,10 +61,10 @@
             if (el) el.innerText = "[" + new Date().toLocaleTimeString() + "] " + msg;
         }
 
-        window.onerror = (m, u, l) => log("ERROR: " + m + " (L" + l + ")");
+        window.onerror = (m, u, l) => log("FATAL_JS_ERROR: " + m + " (Line " + l + ")");
 
         document.addEventListener('DOMContentLoaded', () => {
-            log("BOOT: START");
+            log("BOOT: OK");
             fetchData(true);
             setInterval(() => fetchData(false), 5000);
         });
@@ -76,17 +77,28 @@
             try {
                 const res = await fetch(`${GAS_URL}?lists=${loadLists}&t=${Date.now()}`);
                 const text = await res.text();
-                if (!text.trim().startsWith('{')) throw new Error("JSON_ERROR");
+                
+                // --- 判定を緩和: { または [ で始まればJSONとみなす ---
+                const trimmed = text.trim();
+                if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+                    // HTML（エラー画面）が返ってきた場合、最初の100文字を診断に表示
+                    throw new Error("SERVER_NOT_JSON: " + trimmed.substring(0, 100));
+                }
 
-                const data = JSON.parse(text);
-                if (data.error) throw new Error(data.error);
+                const data = JSON.parse(trimmed);
+                if (data.error) throw new Error("GAS_LOGIC_ERROR: " + data.message);
 
                 if (data.lists) lists = data.lists;
-                if (data.rooms) syncRooms(data.rooms);
+                // 配列形式（旧）でもオブジェクト形式（新）でも対応
+                const roomArray = Array.isArray(data) ? data : data.rooms;
+                if (roomArray) syncRooms(roomArray);
+                
                 log("SYNC: OK");
             } catch (e) {
-                log("SYNC: FAILED - " + e.message);
-                if (allRooms.length === 0) document.getElementById('room-list-container').innerHTML = "ERROR: " + e.message;
+                log("SYNC_ERR: " + e.message);
+                if (allRooms.length === 0) {
+                    document.getElementById('room-list-container').innerHTML = `<div class="error-box"><b>読込失敗</b><br>${e.message}</div>`;
+                }
             } finally {
                 isFetching = false;
             }
@@ -113,8 +125,7 @@
             const b = String(r.B||"").trim(), h = String(r.H||"").trim(), j = String(r.J||"").trim();
             const isS = (b !== "－－" && b !== "") || (h !== "－－" && h !== "");
             const isP = (j !== "" && !["－－","ーー","着"].includes(j));
-            const isD = (r.K === true || String(r.K) === 'true');
-            const isC = (r.L === true || String(r.L) === 'true');
+            const isD = (r.K === true || String(r.K) === 'true'), isC = (r.L === true || String(r.L) === 'true');
             if (isS && isP && isD && isC) return 'status-final';
             if (isD && isC) return 'status-departed';
             if (isC) return 'status-inspected';
@@ -143,11 +154,11 @@
             card.className = "room-card " + getStatus(r);
             card.innerHTML = `
                 <div class="room-header">
-                    <div class="header-info"><div class="room-no">${r.A}号室</div><div class="room-user">担: ${r.B || '－－'}</div>${isE ? '<span class="early-badge">E</span>' : ''}</div>
+                    <div class="header-info"><div class="room-no">${r.A}</div><div class="room-user">担: ${r.B || '－－'}</div>${isE ? '<span class="early-badge">E</span>' : ''}</div>
                     <label class="header-check-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検</label>
                 </div>
                 <div class="view-row">${isD ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                    <div class="memo-inline"><span class="memo-label">備考</span><span class="memo-text">${r.I || ''}</span></div></div>
+                    <div class="memo-inline"><span class="memo-text">${r.I || ''}</span></div></div>
                 <div class="edit-grid">
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 4)" ${r.D ? 'checked' : ''}> 忘れ物</label>
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 5)" ${r.E ? 'checked' : ''}> 茶器洗浄</label>
@@ -155,8 +166,8 @@
                     <label class="input-label"><input type="checkbox" onchange="updateVal(this, ${r.rowNumber}, 7)" ${r.G ? 'checked' : ''}> クロゼット</label>
                 </div>
                 <div class="bottom-controls">
-                    <div class="bottom-select-group"><label>摘要</label><select onchange="updateVal(this, ${r.rowNumber}, 8)">${getOpts(lists.summary, r.H)}</select></div>
-                    <div class="bottom-select-group"><label>確認</label><select onchange="updateVal(this, ${r.rowNumber}, 10)">${getOpts(lists.checker, r.J)}</select></div>
+                    <div class="bottom-select-group"><select onchange="updateVal(this, ${r.rowNumber}, 8)">${getOpts(lists.summary, r.H)}</select></div>
+                    <div class="bottom-select-group"><select onchange="updateVal(this, ${r.rowNumber}, 10)">${getOpts(lists.checker, r.J)}</select></div>
                 </div>`;
         }
 
@@ -179,9 +190,9 @@
             }
             pauseUntil = Date.now() + 8000;
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val: v }) });
-                log("UPDATE: OK");
-            } catch (e) { log("UPDATE: FAILED - " + e.message); }
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val: v }) });
+                log("POST: OK");
+            } catch (e) { log("POST_ERR: " + e.message); }
         }
     </script>
 </body>
