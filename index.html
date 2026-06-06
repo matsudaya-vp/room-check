@@ -75,18 +75,22 @@
 
         document.addEventListener('DOMContentLoaded', () => { loadData(); setInterval(loadData, 5000); });
         
-        function loadData() {
+function loadData() {
             if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
             if (Date.now() < pauseRefreshUntil) return; 
+
             const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
+
             fetch(noCacheUrl).then(response => response.json()).then(data => { 
                 if (Date.now() < pauseRefreshUntil) return;
+
+                // ▼ここを修正：Array.isArray(data) ではなく data.rooms があるかを確認する
                 if (data && data.rooms) { 
-                    allRoomsData = data.rooms; 
-                    masterStaffList = data.staffList || [];
-                    renderRooms(); 
+                    allRoomsData = data.rooms;       // 客室データを代入
+                    masterStaffList = data.staffList || []; // 確認者名簿を代入
+                    renderRooms();                   // 画面を描画
                 } 
-            }).catch(err => console.error(err));
+            }).catch(showError);
         }
         
         function getFloorNumber(roomName) {
