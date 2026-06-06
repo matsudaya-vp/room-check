@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ Ver.14.0</title>
+    <title>客室点検アプリ Ver.14.1</title>
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
@@ -21,7 +21,7 @@
         .header-info { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; border: 1px solid #ccc; }
-        .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 2px; }
         .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; background: #fff; }
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); font-weight: bold; }
@@ -36,7 +36,7 @@
         .bottom-select-group label { font-size: 0.8rem; color: #666; font-weight: bold; white-space: nowrap; }
         .bottom-select-group select { width: 100%; padding: 6px 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.85rem; background: #fff; height: 36px; }
         .loading { text-align: center; padding: 40px; color: #666; }
-        .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
+        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; margin: 10px; }
     </style>
 </head>
 <body>
@@ -51,7 +51,7 @@
             <button class="refresh-btn" onclick="fetchData(true)">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">読込中...</div></div>
-        <div class="version-info">Ver.14.0 Performance Master</div>
+        <div class="version-info" style="text-align:center; font-size:10px; color:#999; margin-top:10px;">Ver.14.1 Fixed</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
@@ -65,17 +65,25 @@
             if (Date.now() < pauseUntil || (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT'))) return;
             try {
                 const res = await fetch(`${GAS_URL}?lists=${loadLists}&t=${Date.now()}`);
+                if (!res.ok) throw new Error("Network error");
                 const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
                 if (data.lists) {
-                    listStaff = data.lists.staff; listSummary = data.lists.summary; listChecker = data.lists.checker;
+                    listStaff = data.lists.staff || [];
+                    listSummary = data.lists.summary || [];
+                    listChecker = data.lists.checker || [];
                 }
-                updateData(data.rooms);
-            } catch (e) { console.error("Fetch failed", e); }
+                if (data.rooms) updateData(data.rooms);
+            } catch (e) {
+                console.error("Fetch failed", e);
+                const container = document.getElementById('room-list-container');
+                if (allRooms.length === 0) container.innerHTML = `<div class="error-msg">通信エラー: ${e.message}<br>再読み込みしてください</div>`;
+            }
         }
 
         function updateData(newRooms) {
-            if (!newRooms) return;
-            const container = document.getElementById('room-list-container');
+            if (!newRooms || !Array.isArray(newRooms)) return;
             if (allRooms.length === 0) {
                 allRooms = newRooms; renderAll(); return;
             }
@@ -153,22 +161,32 @@
 
         function getOptions(list, current) {
             let opts = `<option value="">-</option>`;
-            list.forEach(i => opts += `<option value="${i}" ${current==i?'selected':''}>${i}</option>`);
-            if (current && !list.includes(current)) opts += `<option value="${current}" selected>${current}</option>`;
+            if (list && list.length > 0) {
+                list.forEach(i => {
+                    const val = String(i).trim();
+                    if (val === "") return;
+                    opts += `<option value="${val}" ${current == val ? 'selected' : ''}>${val}</option>`;
+                });
+            }
+            if (current && current !== "" && (!list || !list.includes(current))) {
+                opts += `<option value="${current}" selected>${current}</option>`;
+            }
             return opts;
         }
 
-        function updateValue(el, row, col) {
+        async function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
             const room = allRooms.find(r => r.rowNumber === row);
             const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' };
             if (room) {
                 room[colMap[col]] = val;
                 const card = document.getElementById(`room-${row}`);
-                if (card) card.className = `room-card ${getStatus(room)}`; // 楽観的UI更新
+                if (card) card.className = `room-card ${getStatus(room)}`; 
             }
             pauseUntil = Date.now() + 8000;
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val }) });
+            try {
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val }) });
+            } catch (e) { console.error("Update failed", e); }
         }
     </script>
 </body>
