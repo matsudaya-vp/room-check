@@ -30,8 +30,8 @@
         .room-card.status-inspected .bottom-select-group label { color: #e2e8f0; }
         .room-card.status-inspected .header-check-label { background: #296296; border-color: #1e4b7a; color: white; }
 
-        .room-card.status-departed { background: white; border-left-color: #cbd5e1; color: #333; }
-        .room-card.status-departed .header-check-label { background: #f8f9fa; border-color: #cbd5e1; color: #333; }
+        .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; color: #333; }
+        .room-card.status-departed .header-check-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
 
         .room-card.status-final { background: #d9ead3; border-left-color: #b6d7a8; color: #333; }
         .room-card.status-final .header-check-label { background: #b6d7a8; border-color: #93c47d; color: #166534; }
@@ -42,7 +42,7 @@
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; white-space: nowrap; color: #333; }
         
-        /* ★アーリーチェックインアイコン */
+        /* アーリーチェックインアイコン */
         .early-badge { background-color: #b91c1c; color: white; font-weight: bold; font-size: 1rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .header-right { display: flex; align-items: center; gap: 10px; }
 
@@ -86,10 +86,10 @@
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderRooms()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderRooms()"> 5</label>
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderRooms()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↻</button>
+            <button class="refresh-btn" onclick="loadData()">?</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.9</div>
+        <div class="version-info">Ver.10</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRaOWsyE02wwANq8zdYgKdvhO7z6rCCrAT_qWzBBMUBhxc6aZj1mbJ6MF-Vdwa0pyJlA/exec';
@@ -123,7 +123,7 @@
             return null;
         }
         
-        // ★状態判定ロジック関数（列ずれ対応：H=摘要, J=確認者, K=出発, L=点検）
+        // ★状態判定ロジック関数（完全にシートの元のロジックに同期）
         function getRoomStatusClass(room) {
             const valB = room.B ? String(room.B).trim() : "";
             const valH = room.H ? String(room.H).trim() : "";
@@ -132,20 +132,17 @@
             const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');  
 
             const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-            const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
             const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
 
-            const cond1 = (!isB_Empty || !isH_Empty); 
-
-            if (cond1 && isPersonChecked && isDeparted && isCompleted) {
+            if (isPersonChecked && isDeparted && isCompleted) {
                 return 'status-final';     
-            } else if (isDeparted && isCompleted) {
+            } else if (isDeparted) { // ★点検完了がなくても出発済ならオレンジ
                 return 'status-departed';  
             } else if (isCompleted) {
                 return 'status-inspected'; 
-            } else if (valH === "予備部屋" || valH === "緊急時用") {
+            } else if (valH === "予備部屋" || valH === "緊急時用") { // ★特定の摘要の時だけ反応
                 return 'status-standby';   
-            } else if (!isB_Empty) {
+            } else if (!isB_Empty) { // ★担当が入っていれば反応
                 return 'status-standby';   
             } else {
                 return 'status-default';   
@@ -165,14 +162,14 @@
                     
                     const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
                     const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true'); // ★C列判定
+                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true'); 
                     
                     const card = document.createElement('div');
                     card.className = `room-card ${getRoomStatusClass(room)}`;
                     
                     const jBadge = isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
-                    const memoValue = room.I ? room.I : ''; // ★I列(備考)
-                    const earlyHtml = isEarly ? `<div class="early-badge">E</div>` : ''; // ★アイコン
+                    const memoValue = room.I ? room.I : ''; 
+                    const earlyHtml = isEarly ? `<div class="early-badge">E</div>` : ''; 
                     
                     card.innerHTML = `
                         <div class="room-header">
@@ -222,7 +219,6 @@
         
         function updateValue(el, row, col) {
             const val = el.type === 'checkbox' ? el.checked : el.value;
-            // ★送信用の列マッピングも変更
             const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
             const key = colMap[col];
             
