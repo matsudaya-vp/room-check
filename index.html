@@ -13,56 +13,65 @@
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
         
-        /* --- カード全体と状態ごとの色設定 --- */
-        .room-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid #666; transition: background 0.3s, border-color 0.3s; }
+        /* --- カード全体 --- */
+        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
         
-        /* 1. 点検完了 (通常) の色: 緑 */
-        .room-card.completed { background: #f0fdf4; border-left-color: #22c55e; }
-        /* 2. 点検完了 ＋ 出発済 の色: 淡いオレンジ */
-        .room-card.departed-completed { background: #fff7ed; border-left-color: #f97316; }
-        /* 3. 点検完了 ＋ 出発済 ＋ 確認者入力済 の色: グレー背景、グレー枠 */
-        /* 【変更】視認性向上のため背景色を `#f1f5f9` から `#e2e8f0` (少し濃いグレー) に変更 */
-        .room-card.final-checked { background: #e2e8f0; border-left-color: #666; }
+        /* --- 5つの状態定義 --- */
+        /* 状態1: デフォルト */
+        .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
+        .room-card.status-default .header-check-label { background: #9ca3af; border-color: #6b7280; color: white; }
+
+        /* 状態2: スタンバイ */
+        .room-card.status-standby { background: white; border-left-color: #666; }
+        .room-card.status-standby .header-check-label { background: #f8f9fa; border-color: #cbd5e1; color: #333; }
+
+        /* 状態3: 点検完了 */
+        .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
+        .room-card.status-inspected .header-check-label { background: #0ea5e9; border-color: #0284c7; color: white; }
+
+        /* 状態4: 出発済 */
+        .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
+        .room-card.status-departed .header-check-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+
+        /* 状態5: 最終確認済 */
+        .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
+        .room-card.status-final .header-check-label { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
         
         /* --- ヘッダー（号室・担当・点検ボタン） --- */
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
         .header-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
-        .room-user { font-size: 0.85rem; background: #e9ecef; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
         
-        /* 点検ボタン（右上）のデザインと状態ごとの色 */
-        .header-check-label { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+        /* 点検ボタン（右上） */
+        .header-check-label { border: 1px solid; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
         .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-        .room-card.completed .header-check-label { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
-        .room-card.departed-completed .header-check-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
-        /* 【変更】カード背景色が濃くなったのに合わせ、ボタンの色を `#e2e8f0` から `#cbd5e1` (さらに濃いグレー) に変更 */
-        .room-card.final-checked .header-check-label { background: #cbd5e1; border-color: #94a3b8; color: #1e293b; }
 
         /* --- 2行目（バッジ・備考） --- */
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
-        .status-badge { padding: 3px 6px; border-radius: 4px; background: #e2e8f0; white-space: nowrap; }
-        .status-badge.active { background: #3d85c6; color: white; }
+        .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); white-space: nowrap; border: 1px solid #ccc; }
+        .status-badge.active { background: #3d85c6; color: white; border: none; }
         
-        /* 備考表示部 */
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
-        .memo-label { font-weight: bold; font-size: 0.75rem; color: #666; white-space: nowrap; }
+        .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; white-space: nowrap; }
         .memo-text { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* --- 3行目（チェックボックス4つ） --- */
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .input-label { background: #f1f5f9; padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .input-label { background: rgba(241, 245, 249, 0.7); padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .input-label input { width: 18px; height: 18px; margin: 0; }
         
         /* --- 4行目（摘要・確認者エリア） --- */
-        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid #333; padding-top: 12px; margin-top: 4px; }
+        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.2); padding-top: 12px; margin-top: 4px; }
         .bottom-select-group { display: flex; align-items: center; gap: 6px; }
         .group-summary { flex: 55; }
         .group-checker { flex: 45; }
-        .bottom-select-group label { font-size: 0.8rem; color: #666; white-space: nowrap; }
-        .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #f8f9fa; }
+        .bottom-select-group label { font-size: 0.8rem; color: #444; white-space: nowrap; }
+        .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: rgba(255,255,255,0.9); }
 
         .loading { text-align: center; padding: 40px; color: #666; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
+        .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -77,6 +86,7 @@
             <button class="refresh-btn" onclick="loadData()">🔄</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
+        <div class="version-info">Ver.5</div>
     </div>
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRaOWsyE02wwANq8zdYgKdvhO7z6rCCrAT_qWzBBMUBhxc6aZj1mbJ6MF-Vdwa0pyJlA/exec';
@@ -110,6 +120,35 @@
             return null;
         }
         
+        // ★状態判定ロジック関数
+        function getRoomStatusClass(room) {
+            // 値の取得と空白除去
+            const valB = room.B ? String(room.B).trim() : "";
+            const valG = room.G ? String(room.G).trim() : "";
+            const valI = room.I ? String(room.I).trim() : "";
+            const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true'); // 点検
+            const isDeparted = (room.J === true || String(room.J).toLowerCase() === 'true');  // 出発済
+
+            // "－－"(全角ダッシュ), "ーー"(長音符), "--"(半角) の揺らぎをすべて「空」として判定
+            const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
+            const isG_Empty = (valG === "" || valG === "－－" || valG === "ーー" || valG === "--");
+            const isI_Empty = (valI === "" || valI === "－－" || valI === "ーー" || valI === "--");
+
+            const cond1 = (!isB_Empty || !isG_Empty); // 条件1: B(担当)かG(摘要)に何か入っている
+
+            if (cond1 && !isI_Empty && isDeparted && isCompleted) {
+                return 'status-final';     // 状態5: 最終確認済（薄緑）
+            } else if (isDeparted && isCompleted) {
+                return 'status-departed';  // 状態4: 出発済（オレンジ）
+            } else if (isCompleted) {
+                return 'status-inspected'; // 状態3: 点検完了（水色）
+            } else if (cond1) {
+                return 'status-standby';   // 状態2: スタンバイ（白）
+            } else {
+                return 'status-default';   // 状態1: デフォルト（グレー）
+            }
+        }
+        
         function renderRooms() {
             try {
                 if (allRoomsData.length === 0) return;
@@ -121,23 +160,12 @@
                     const floor = getFloorNumber(room.A);
                     if (floor !== null && !checkedFloors.includes(floor)) return;
                     
-                    // 各種状態の判定
                     const isCompleted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isDeparted = (room.J === true || String(room.J).toLowerCase() === 'true');
-                    const isPersonChecked = (room.I && room.I !== "着" && room.I !== "－－" && room.I !== "");
                     
                     const card = document.createElement('div');
-                    
-                    // クラスの振り分け処理（優先度順）
-                    if (isCompleted && isDeparted && isPersonChecked) {
-                        card.className = 'room-card final-checked';
-                    } else if (isCompleted && isDeparted) {
-                        card.className = 'room-card departed-completed';
-                    } else if (isCompleted) {
-                        card.className = 'room-card completed';
-                    } else {
-                        card.className = 'room-card';
-                    }
+                    // ★ここで関数を呼び出し、クラスを付与
+                    card.className = `room-card ${getRoomStatusClass(room)}`;
                     
                     const jBadge = isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>';
                     const memoValue = room.H ? room.H : ''; 
@@ -190,27 +218,15 @@
             const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 9:'I', 11:'K' }; 
             const key = colMap[col];
             
-            // 操作した内容をローカルデータに即時反映
             const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
             if (targetRoom && key) { 
-                targetRoom[key] = val; 
+                targetRoom[key] = val; // 操作内容を即座にローカルへ反映
             }
             
-            // リアルタイム色変更処理（点検・確認者・摘要などの操作時に即座に色を再計算）
+            // ★リアルタイム色変更処理
             const card = el.closest('.room-card');
             if (card && targetRoom) {
-                const isCompleted = (targetRoom.K === true || String(targetRoom.K).toLowerCase() === 'true');
-                const isDeparted = (targetRoom.J === true || String(targetRoom.J).toLowerCase() === 'true');
-                const isPersonChecked = (targetRoom.I && targetRoom.I !== "着" && targetRoom.I !== "－－" && targetRoom.I !== "");
-                
-                card.className = 'room-card'; // 一旦リセット
-                if (isCompleted && isDeparted && isPersonChecked) {
-                    card.classList.add('final-checked');
-                } else if (isCompleted && isDeparted) {
-                    card.classList.add('departed-completed');
-                } else if (isCompleted) {
-                    card.classList.add('completed');
-                }
+                card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
             }
             
             pauseRefreshUntil = Date.now() + 8000; 
