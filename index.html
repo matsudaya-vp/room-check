@@ -71,36 +71,62 @@
         <div class="version-info">Ver.12.8（パフォーマンス最適化・堅牢化対応）</div>
     </div>
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
 let allRoomsData = []; 
 let masterStaffList = []; 
 let pauseRefreshUntil = 0; 
 let isFetching = false;
+let refreshTimer = null; // 【追加】数珠つなぎタイマー用の変数
 
 const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
 
 document.addEventListener('DOMContentLoaded', () => { 
     loadData(); 
-    setInterval(loadData, 5000); 
 });
 
-// スリープやタブ切り替えからの復帰時に更新を再開（念のための保険）
+// 【追加】1. 画面全体のタップ監視（キャンセル時のフォーカス残り防止）
+document.addEventListener('click', (e) => {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
+        // タップした場所が入力要素自身でなければ、強制的にフォーカスを外す
+        if (e.target !== active) {
+            active.blur();
+        }
+    }
+});
+
+// スリープやタブ切り替えからの復帰時に更新を再開
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         pauseRefreshUntil = 0;
-        if (!isFetching) loadData();
+        if (!isFetching) {
+            clearTimeout(refreshTimer);
+            loadData();
+        }
     }
 });
 
 async function loadData() {
+    // 【追加】2. タイマーの数珠つなぎ化（処理の最後に次を予約する）
+    const scheduleNext = () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(loadData, 5000);
+    };
+
     const active = document.activeElement;
-    if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) return; 
-    if (Date.now() < pauseRefreshUntil) return; 
+    if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
+        scheduleNext(); // スキップ時も次は予約する
+        return; 
+    }
+    if (Date.now() < pauseRefreshUntil) {
+        scheduleNext();
+        return; 
+    }
     
     if (isFetching) return;
     isFetching = true;
 
-    // 通信のタイムアウト設定（8秒で強制キャンセルし、次回の更新を妨げない）
+    // 通信のタイムアウト設定（8秒）
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -112,6 +138,7 @@ async function loadData() {
 
         if (Date.now() < pauseRefreshUntil) {
             isFetching = false;
+            scheduleNext();
             return;
         }
 
@@ -133,6 +160,7 @@ async function loadData() {
             `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
     } finally {
         isFetching = false; 
+        scheduleNext(); // 成功・失敗に関わらず確実に次を予約
     }
 }
 
@@ -246,14 +274,13 @@ function updateValue(el, row, col) {
     if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
     pauseRefreshUntil = Date.now() + 8000; 
     
-    // 【重要】操作完了後にフォーカス状態を強制解除し、ガード条件をリセットする
+    // 操作完了後にフォーカス状態を強制解除
     el.blur();
 
-    // POST送信エラーでその後の処理が止まるのを防ぐ
+    // POST送信
     fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
         .catch(e => console.error('送信エラー:', e));
 }
-        
     </script>
 </body>
 </html>
