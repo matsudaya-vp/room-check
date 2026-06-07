@@ -24,17 +24,15 @@
         .header-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
         
-        /* 担当者の表示（枠線を付けて画像に近づける） */
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); border: 1px solid #ccc; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 2px; }
 
-        /* 点検チェックボックスの枠をプルダウンの色（#ccc）に合わせる */
         .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; background: #fff; }
         .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); white-space: nowrap; }
-        .status-badge.active { background: #3d85c6; color: white; }
+        .status-badge.active { background: #ef4444; color: white; }
         
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
         .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; white-space: nowrap; }
@@ -59,228 +57,236 @@
 <body>
     <div id="app-container">
         <div class="filter-container">
-            <label class="filter-label"><input type="checkbox" value="1" checked onchange="renderAll()"> 1</label>
-            <label class="filter-label"><input type="checkbox" value="2" checked onchange="renderAll()"> 2</label>
-            <label class="filter-label"><input type="checkbox" value="3" checked onchange="renderAll()"> 3</label>
-            <label class="filter-label"><input type="checkbox" value="4" checked onchange="renderAll()"> 4</label>
-            <label class="filter-label"><input type="checkbox" value="5" checked onchange="renderAll()"> 5</label>
-            <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderAll()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">?</button>
+            <label class="filter-label"><input type="checkbox" value="1" checked onchange="saveFilters(); renderAll()"> 1</label>
+            <label class="filter-label"><input type="checkbox" value="2" checked onchange="saveFilters(); renderAll()"> 2</label>
+            <label class="filter-label"><input type="checkbox" value="3" checked onchange="saveFilters(); renderAll()"> 3</label>
+            <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
+            <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
+            <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
+            <button class="refresh-btn" onclick="loadData()">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.8（パフォーマンス最適化・堅牢化対応）</div>
+        <div class="version-info">Ver.12.92（新URL反映版）</div>
     </div>
     <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
-let allRoomsData = []; 
-let masterStaffList = []; 
-let pauseRefreshUntil = 0; 
-let isFetching = false;
-let refreshTimer = null; // 【追加】数珠つなぎタイマー用の変数
+        // 【更新箇所】新しいGASのURLへ差し替え完了
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
+        let allRoomsData = []; 
+        let masterStaffList = []; 
+        let pauseRefreshUntil = 0; 
+        let isFetching = false;
+        let refreshTimer = null; 
 
-const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
+        const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
 
-document.addEventListener('DOMContentLoaded', () => { 
-    loadData(); 
-});
+        document.addEventListener('DOMContentLoaded', () => { 
+            const savedFilters = localStorage.getItem('selectedFloors');
+            if (savedFilters) {
+                try {
+                    const floors = JSON.parse(savedFilters);
+                    document.querySelectorAll('.filter-container input').forEach(cb => {
+                        cb.checked = floors.includes(cb.value);
+                    });
+                } catch(e) { console.error('保存されたフィルターの読み込みに失敗しました', e); }
+            }
+            loadData(); 
+        });
 
-// 【追加】1. 画面全体のタップ監視（キャンセル時のフォーカス残り防止）
-document.addEventListener('click', (e) => {
-    const active = document.activeElement;
-    if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
-        // タップした場所が入力要素自身でなければ、強制的にフォーカスを外す
-        if (e.target !== active) {
-            active.blur();
-        }
-    }
-});
-
-// スリープやタブ切り替えからの復帰時に更新を再開
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        pauseRefreshUntil = 0;
-        if (!isFetching) {
-            clearTimeout(refreshTimer);
-            loadData();
-        }
-    }
-});
-
-async function loadData() {
-    // 【追加】2. タイマーの数珠つなぎ化（処理の最後に次を予約する）
-    const scheduleNext = () => {
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(loadData, 5000);
-    };
-
-    const active = document.activeElement;
-    if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
-        scheduleNext(); // スキップ時も次は予約する
-        return; 
-    }
-    if (Date.now() < pauseRefreshUntil) {
-        scheduleNext();
-        return; 
-    }
-    
-    if (isFetching) return;
-    isFetching = true;
-
-    // 通信のタイムアウト設定（8秒）
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    try {
-        const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
-        const response = await fetch(noCacheUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        const data = await response.json();
-
-        if (Date.now() < pauseRefreshUntil) {
-            isFetching = false;
-            scheduleNext();
-            return;
+        function saveFilters() {
+            const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
+            localStorage.setItem('selectedFloors', JSON.stringify(checkedFloors));
         }
 
-        if (data && data.rooms) {
-            allRoomsData = data.rooms;
-            masterStaffList = data.staffList || [];
-        } else if (Array.isArray(data)) {
-            allRoomsData = data;
-        }
+        document.addEventListener('click', (e) => {
+            const active = document.activeElement;
+            if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
+                if (e.target !== active) {
+                    active.blur();
+                }
+            }
+        });
 
-        if (allRoomsData.length > 0) {
-            renderAll(); 
-        }
-    } catch (e) {
-        console.error(e);
-        const isTimeout = e.name === 'AbortError';
-        const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
-        document.getElementById('room-list-container').innerHTML =
-            `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>?ボタンで再試行してください</div>`;
-    } finally {
-        isFetching = false; 
-        scheduleNext(); // 成功・失敗に関わらず確実に次を予約
-    }
-}
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                pauseRefreshUntil = 0;
+                if (!isFetching) {
+                    clearTimeout(refreshTimer);
+                    loadData();
+                }
+            }
+        });
 
-function getFloorNumber(roomName) {
-    const str = String(roomName);
-    const match = str.match(/^[1-6]/);
-    return match ? match[0] : null;
-}
+        async function loadData() {
+            const scheduleNext = () => {
+                clearTimeout(refreshTimer);
+                refreshTimer = setTimeout(loadData, 5000);
+            };
 
-function getRoomStatusClass(room) {
-    const valB = room.B ? String(room.B).trim() : "";
-    const valH = room.H ? String(room.H).trim() : "";
-    const valJ = room.J ? String(room.J).trim() : "";
-    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-
-    const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-    const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
-    const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-    const cond1 = (!isB_Empty || !isH_Empty); 
-
-    if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
-    else if (isDeparted && isCompleted) return 'status-departed';  
-    else if (isCompleted) return 'status-inspected'; 
-    else if (cond1) return 'status-standby';   
-    else return 'status-default';   
-}
-
-function renderAll() {
-    try {
-        if (allRoomsData.length === 0) return;
-        const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-        const container = document.getElementById('room-list-container'); 
-        const fragment = document.createDocumentFragment();
-        
-        allRoomsData.forEach(room => {
-            const floor = getFloorNumber(room.A);
-            if (floor !== null && !checkedFloors.includes(floor)) return;
+            const active = document.activeElement;
+            if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
+                scheduleNext(); 
+                return; 
+            }
+            if (Date.now() < pauseRefreshUntil) {
+                scheduleNext();
+                return; 
+            }
             
-            const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true');
+            if (isFetching) return;
+            isFetching = true;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+            try {
+                const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
+                const response = await fetch(noCacheUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await response.json();
+
+                if (Date.now() < pauseRefreshUntil) {
+                    isFetching = false;
+                    scheduleNext();
+                    return;
+                }
+
+                if (data && data.rooms) {
+                    allRoomsData = data.rooms;
+                    masterStaffList = data.staffList || [];
+                } else if (Array.isArray(data)) {
+                    allRoomsData = data;
+                }
+
+                if (allRoomsData.length > 0) {
+                    renderAll(); 
+                }
+            } catch (e) {
+                console.error(e);
+                const isTimeout = e.name === 'AbortError';
+                const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
+                document.getElementById('room-list-container').innerHTML =
+                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
+            } finally {
+                isFetching = false; 
+                scheduleNext(); 
+            }
+        }
+
+        function getFloorNumber(roomName) {
+            const str = String(roomName);
+            const match = str.match(/^[1-6]/);
+            return match ? match[0] : null;
+        }
+
+        function getRoomStatusClass(room) {
+            const valB = room.B ? String(room.B).trim() : "";
+            const valH = room.H ? String(room.H).trim() : "";
+            const valJ = room.J ? String(room.J).trim() : "";
             const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
             const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-            
-            let jOptions = `<option value="">-未選択-</option>`;
-            let currentJ = String(room.J || "").trim();
-            let found = false;
-            let staffList = masterStaffList.length > 0 ? masterStaffList : ["着", "フミ", "サワ", "ユキ", "ミキ", "有田", "岡田", "佐賀", "三村", "秋富", "荒川", "佐々木", "板倉", "鍋島", "杉岡", "ﾌﾛﾝﾄ", "－－"];
-            
-            staffList.forEach(n => {
-                const selected = (currentJ === n) ? 'selected' : '';
-                if(selected) found = true;
-                jOptions += `<option value="${n}" ${selected}>${n}</option>`;
-            });
-            if(!found && currentJ !== "" && currentJ !== "－－") jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
 
-            const card = document.createElement('div');
-            card.className = `room-card ${getRoomStatusClass(room)}`;
+            const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
+            const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
+            const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
+            const cond1 = (!isB_Empty || !isH_Empty); 
+
+            if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
+            else if (isDeparted && isCompleted) return 'status-departed';  
+            else if (isCompleted) return 'status-inspected'; 
+            else if (cond1) return 'status-standby';   
+            else return 'status-default';   
+        }
+
+        function renderAll() {
+            try {
+                if (allRoomsData.length === 0) return;
+                const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
+                const container = document.getElementById('room-list-container'); 
+                const fragment = document.createDocumentFragment();
+                
+                allRoomsData.forEach(room => {
+                    const floor = getFloorNumber(room.A);
+                    if (floor !== null && !checkedFloors.includes(floor)) return;
+                    
+                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true');
+                    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
+                    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
+                    
+                    let jOptions = `<option value="">-未選択-</option>`;
+                    let currentJ = String(room.J || "").trim();
+                    let found = false;
+                    let staffList = masterStaffList.length > 0 ? masterStaffList : ["着", "フミ", "サワ", "ユキ", "ミキ", "有田", "岡田", "佐賀", "三村", "秋富", "荒川", "佐々木", "板倉", "鍋島", "杉岡", "ﾌﾛﾝﾄ", "－－"];
+                    
+                    staffList.forEach(n => {
+                        const selected = (currentJ === n) ? 'selected' : '';
+                        if(selected) found = true;
+                        jOptions += `<option value="${n}" ${selected}>${n}</option>`;
+                    });
+                    if(!found && currentJ !== "" && currentJ !== "－－") jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
+
+                    const card = document.createElement('div');
+                    card.className = `room-card ${getRoomStatusClass(room)}`;
+                    
+                    card.innerHTML = `
+                        <div class="room-header">
+                            <div class="header-info">
+                                <div class="room-no">${room.A}号室</div>
+                                <div class="room-user">担当: ${room.B || '未定'}</div>
+                                ${isEarly ? '<span class="early-badge">E</span>' : ''}
+                            </div>
+                            <label class="header-check-label">
+                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isCompleted ? 'checked' : ''}> 点検
+                            </label>
+                        </div>
+                        <div class="view-row">
+                            ${isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
+                            <div class="memo-inline">
+                                <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
+                            </div>
+                        </div>
+                        <div class="edit-grid">
+                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
+                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
+                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
+                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
+                        </div>
+                        <div class="bottom-controls">
+                            <div class="bottom-select-group group-summary">
+                                <label>摘要</label>
+                                <select onchange="updateValue(this, ${room.rowNumber}, 8)">
+                                    <option value="">- なし -</option>
+                                    ${summaryList.map(h => `<option value="${h}" ${room.H===h?'selected':''}>${h}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="bottom-select-group group-checker">
+                                <label>確認者</label>
+                                <select onchange="updateValue(this, ${room.rowNumber}, 10)">
+                                    ${jOptions}
+                                </select>
+                            </div>
+                        </div>`;
+                    fragment.appendChild(card);
+                });
+                container.innerHTML = '';
+                container.appendChild(fragment);
+            } catch (e) { console.error(e); }
+        }
+
+        function updateValue(el, row, col) {
+            const val = el.type === 'checkbox' ? el.checked : el.value;
+            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
+            const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
+            if (targetRoom) targetRoom[colMap[col]] = val;
+            const card = el.closest('.room-card');
             
-            card.innerHTML = `
-                <div class="room-header">
-                    <div class="header-info">
-                        <div class="room-no">${room.A}号室</div>
-                        <div class="room-user">担当: ${room.B || '未定'}</div>
-                        ${isEarly ? '<span class="early-badge">E</span>' : ''}
-                    </div>
-                    <label class="header-check-label">
-                        <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isCompleted ? 'checked' : ''}> 点検
-                    </label>
-                </div>
-                <div class="view-row">
-                    ${isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                    <div class="memo-inline">
-                        <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
-                    </div>
-                </div>
-                <div class="edit-grid">
-                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
-                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
-                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
-                </div>
-                <div class="bottom-controls">
-                    <div class="bottom-select-group group-summary">
-                        <label>摘要</label>
-                        <select onchange="updateValue(this, ${room.rowNumber}, 8)">
-                            <option value="">- なし -</option>
-                            ${summaryList.map(h => `<option value="${h}" ${room.H===h?'selected':''}>${h}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="bottom-select-group group-checker">
-                        <label>確認者</label>
-                        <select onchange="updateValue(this, ${room.rowNumber}, 10)">
-                            ${jOptions}
-                        </select>
-                    </div>
-                </div>`;
-            fragment.appendChild(card);
-        });
-        container.innerHTML = '';
-        container.appendChild(fragment);
-    } catch (e) { console.error(e); }
-}
+            if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
+            pauseRefreshUntil = Date.now() + 8000; 
+            
+            el.blur();
 
-function updateValue(el, row, col) {
-    const val = el.type === 'checkbox' ? el.checked : el.value;
-    const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
-    const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
-    if (targetRoom) targetRoom[colMap[col]] = val;
-    const card = el.closest('.room-card');
-    
-    if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
-    pauseRefreshUntil = Date.now() + 8000; 
-    
-    // 操作完了後にフォーカス状態を強制解除
-    el.blur();
-
-    // POST送信
-    fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
-        .catch(e => console.error('送信エラー:', e));
-}
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
+                .catch(e => console.error('送信エラー:', e));
+        }
     </script>
 </body>
 </html>
