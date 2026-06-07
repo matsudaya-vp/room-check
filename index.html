@@ -32,7 +32,6 @@
 
         .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
         .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); white-space: nowrap; }
-        /* 【変更箇所】出発済バッジの背景色を青から「アーリー(C列)」と同じ赤色(#ef4444)に変更 */
         .status-badge.active { background: #ef4444; color: white; }
         
         .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
@@ -67,10 +66,11 @@
             <button class="refresh-btn" onclick="loadData()">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.91（フロア状態保存・UI調整版）</div>
+        <div class="version-info">Ver.12.92（新URL反映版）</div>
     </div>
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
+        // 【更新箇所】新しいGASのURLへ差し替え完了
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
         let allRoomsData = []; 
         let masterStaffList = []; 
         let pauseRefreshUntil = 0; 
@@ -80,7 +80,6 @@
         const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
 
         document.addEventListener('DOMContentLoaded', () => { 
-            // 【変更箇所】初期表示時にローカルストレージからフロアの選択状態を復元
             const savedFilters = localStorage.getItem('selectedFloors');
             if (savedFilters) {
                 try {
@@ -93,7 +92,6 @@
             loadData(); 
         });
 
-        // 【追加箇所】フロアのチェック状態をスマホ内に保存する関数
         function saveFilters() {
             const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
             localStorage.setItem('selectedFloors', JSON.stringify(checkedFloors));
