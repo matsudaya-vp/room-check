@@ -1,292 +1,391 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ</title>
-    <style>
-        body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
-        #app-container { max-width: 600px; margin: 0 auto; }
-        .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
-        .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
-        .filter-label input { width: 14px; height: 14px; margin: 0; }
-        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
-        .refresh-btn:active { background: #296296; }
-        
-        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
-        .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
-        .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
-        .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
-        .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
-        .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
-        
-        .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
-        .header-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
-        
-        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); border: 1px solid #ccc; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-        .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 2px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客室点検アプリ</title>
+  <style>
+    /* =========================================
+       基本スタイル・リスト画面
+       ========================================= */
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f9;
+      color: #333;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background-color: #fff;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .filter-area select {
+      padding: 5px;
+      font-size: 1rem;
+    }
+    .map-btn {
+      padding: 8px 12px;
+      background-color: #4a5568;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .list-container {
+      padding: 15px;
+    }
+    
+    /* =========================================
+       エラー画面（8秒通信タイムアウト用）
+       ========================================= */
+    #error-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+    #error-overlay.hidden {
+      display: none;
+    }
+    .retry-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      background-color: #e53e3e;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-        .header-check-label { border: 1px solid #ccc; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; white-space: nowrap; background: #fff; }
-        .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+    /* =========================================
+       マップ画面（スナップショット表示）
+       ========================================= */
+    #map-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: #f7fafc;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+    }
+    #map-modal.hidden {
+      display: none;
+    }
+    .map-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background-color: #fff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .map-title-area h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #2d3748;
+    }
+    .timestamp {
+      font-size: 0.8rem;
+      color: #718096;
+      margin-top: 4px;
+      display: block;
+    }
+    .map-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .refresh-btn, .close-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .refresh-btn { background-color: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; }
+    .close-btn { background-color: #e53e3e; color: white; }
 
-        .view-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.85rem; }
-        .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); white-space: nowrap; }
-        .status-badge.active { background: #ef4444; color: white; }
-        
-        .memo-inline { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #333; overflow: hidden; }
-        .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; white-space: nowrap; }
-        .memo-text { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #map-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 16px;
+      flex: 1;
+      align-content: start;
+    }
+    .map-cell {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      border: 1px solid #a0aec0;
+      border-radius: 4px;
+      background-color: #fff;
+      font-size: 0.95rem;
+      color: #2d3748;
+    }
+    .map-cell.empty {
+      background-color: transparent;
+      border: none;
+    }
 
-        .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .input-label { background: rgba(241, 245, 249, 0.7); padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .input-label input { width: 18px; height: 18px; margin: 0; }
-        
-        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.2); padding-top: 12px; margin-top: 4px; }
-        .bottom-select-group { display: flex; align-items: center; gap: 6px; }
-        .group-summary { flex: 55; }
-        .group-checker { flex: 45; }
-        .bottom-select-group label { font-size: 0.8rem; color: #444; white-space: nowrap; }
-        .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: rgba(255,255,255,0.9); }
-
-        .loading { text-align: center; padding: 40px; color: #666; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
-        .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
-    </style>
+    /* マップ用ステータスカラー */
+    .status-inspected { background-color: #63b3ed; color: #fff; border-color: #4299e1; } /* 点検完了 */
+    .status-cleaning  { background-color: #f6e05e; color: #744210; border-color: #d69e2e; } /* 出発済(清掃中) */
+    .status-staying   { background-color: #a0aec0; color: #fff; border-color: #718096; } /* 滞在 */
+  </style>
 </head>
 <body>
-    <div id="app-container">
-        <div class="filter-container">
-            <label class="filter-label"><input type="checkbox" value="1" checked onchange="saveFilters(); renderAll()"> 1</label>
-            <label class="filter-label"><input type="checkbox" value="2" checked onchange="saveFilters(); renderAll()"> 2</label>
-            <label class="filter-label"><input type="checkbox" value="3" checked onchange="saveFilters(); renderAll()"> 3</label>
-            <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
-            <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
-            <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↻</button>
-        </div>
-        <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.92（新URL反映版）</div>
+
+  <header>
+    <div class="filter-area">
+      <select id="floor-filter">
+        <option value="all">全フロア</option>
+        <option value="6">6階</option>
+        <option value="5">5階</option>
+        <option value="4">4階</option>
+        <option value="3">3階</option>
+        <option value="2">2階</option>
+        <option value="1">1階</option>
+      </select>
     </div>
-    <script>
-        // 【更新箇所】新しいGASのURLへ差し替え完了
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
-        let allRoomsData = []; 
-        let masterStaffList = []; 
-        let pauseRefreshUntil = 0; 
-        let isFetching = false;
-        let refreshTimer = null; 
+    <button id="btn-map-toggle" class="map-btn">🗺 準備状況マップ</button>
+  </header>
 
-        const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
+  <main class="list-container" id="list-container">
+    <p>データ読み込み中...</p>
+  </main>
 
-        document.addEventListener('DOMContentLoaded', () => { 
-            const savedFilters = localStorage.getItem('selectedFloors');
-            if (savedFilters) {
-                try {
-                    const floors = JSON.parse(savedFilters);
-                    document.querySelectorAll('.filter-container input').forEach(cb => {
-                        cb.checked = floors.includes(cb.value);
-                    });
-                } catch(e) { console.error('保存されたフィルターの読み込みに失敗しました', e); }
-            }
-            loadData(); 
+  <div id="error-overlay" class="hidden">
+    <h3>通信エラーが発生しました</h3>
+    <p>電波状況を確認し、再読み込みしてください。</p>
+    <button id="btn-retry" class="retry-btn">↻ 再読み込み</button>
+  </div>
+
+  <div id="map-modal" class="hidden">
+    <div class="map-header">
+      <div class="map-title-area">
+        <h2>全館準備状況</h2>
+        <span id="map-timestamp" class="timestamp">--:-- 時点</span>
+      </div>
+      <div class="map-actions">
+        <button id="btn-map-refresh" class="refresh-btn">↻ 更新</button>
+        <button id="btn-map-close" class="close-btn">✕ 閉じる</button>
+      </div>
+    </div>
+    <div id="map-grid"></div>
+  </div>
+
+  <script>
+    /* =========================================================
+       設定値とグローバル変数
+       ========================================================= */
+    const GAS_WEB_APP_URL = 'ここにGASのデプロイURLを設定してください';
+    
+    let latestRoomData = []; // 最新の客室データを保持（マップ描画用）
+    let currentAbortController = null;
+    let isMapOpen = false; // マップ展開中はリスト描画等のDOM操作を抑制するためのフラグ
+
+    /* 添付画像を再現するレイアウト定義（7列構成） */
+    const mapLayout = [
+      [601, 602, 603, null, 605, null, null],
+      [501, 502, 503, null, 505, null, null],
+      [401, 402, 403, 404, 405, 406, null],
+      [301, 302, 303, 304, 305, 306, 307 ],
+      [201, 202, 203, null, 205, 207, 208 ],
+      [101, 102, 103, null, 105, 107, 108 ]
+    ];
+
+    /* =========================================================
+       1. バックエンド通信とポーリング処理（数珠つなぎ・タイムアウト）
+       ========================================================= */
+    async function fetchRoomData() {
+      // 古い通信が残っていれば破棄
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
+      currentAbortController = new AbortController();
+      const signal = currentAbortController.signal;
+
+      // 8秒で通信を強制切断するタイマー
+      const timeoutId = setTimeout(() => currentAbortController.abort(), 8000);
+
+      try {
+        // ※ fetch ではなく google.script.run を利用している場合は適宜書き換えてください
+        const response = await fetch(GAS_WEB_APP_URL, { signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        
+        // 最新データを保持（マップ用）
+        latestRoomData = data;
+
+        // マップが開いていない時のみ、リスト側のDOMを描画
+        if (!isMapOpen) {
+          renderList(data);
+        }
+
+        // エラー画面が表示されていた場合は非表示に復帰
+        document.getElementById('error-overlay').classList.add('hidden');
+
+        // 数珠つなぎで5秒後に次の取得を実行
+        setTimeout(fetchRoomData, 5000);
+
+      } catch (error) {
+        clearTimeout(timeoutId);
+        // 通信切断（Abort）やネットワークエラー時の処理
+        if (error.name === 'AbortError' || error.message === 'Failed to fetch') {
+          showErrorUI();
+        } else {
+          console.error('Fetch error:', error);
+          setTimeout(fetchRoomData, 5000); // その他のエラーは一旦リトライ
+        }
+      }
+    }
+
+    function showErrorUI() {
+      document.getElementById('error-overlay').classList.remove('hidden');
+    }
+
+    /* =========================================================
+       2. UI状態の保持（localStorage）とフォーカス残留防止
+       ========================================================= */
+    const floorFilterEl = document.getElementById('floor-filter');
+    
+    // フィルター状態の復元
+    const savedFloor = localStorage.getItem('selectedFloor');
+    if (savedFloor) {
+      floorFilterEl.value = savedFloor;
+    }
+
+    // フィルター変更時の保存とフォーカス強制解除
+    floorFilterEl.addEventListener('change', (e) => {
+      localStorage.setItem('selectedFloor', e.target.value);
+      e.target.blur(); // フォーカス残留防止（キーボード収納・更新停止回避）
+      if (!isMapOpen) renderList(latestRoomData); // 即時反映
+    });
+
+    // 入力要素（input/select）全般のフォーカス残留防止
+    document.addEventListener('change', (e) => {
+      if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
+        e.target.blur();
+      }
+    });
+
+    /* =========================================================
+       3. リスト描画処理（既存機能のプレースホルダー）
+       ========================================================= */
+    function renderList(data) {
+      if (!data || data.length === 0) return;
+      const container = document.getElementById('list-container');
+      const currentFloor = floorFilterEl.value;
+      
+      // 実装済みのリスト生成ロジックをここに記述します
+      // （※この関数内では、A2:L34の二次元配列をパースしてHTML化する処理が入ります）
+      // 例: container.innerHTML = '...';
+    }
+
+    /* =========================================================
+       4. 全館マップ機能（スナップショット描画）
+       ========================================================= */
+    function initMapGrid() {
+      const gridContainer = document.getElementById('map-grid');
+      gridContainer.innerHTML = ''; 
+      mapLayout.forEach(row => {
+        row.forEach(roomNum => {
+          const cell = document.createElement('div');
+          if (roomNum === null) {
+            cell.className = 'map-cell empty';
+          } else {
+            cell.className = 'map-cell';
+            cell.id = `map-room-${roomNum}`;
+            cell.textContent = roomNum;
+          }
+          gridContainer.appendChild(cell);
         });
+      });
+    }
 
-        function saveFilters() {
-            const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-            localStorage.setItem('selectedFloors', JSON.stringify(checkedFloors));
+    function updateMapColors(sheetData) {
+      if (!sheetData || sheetData.length === 0) return;
+
+      // 取得時刻の更新
+      const now = new Date();
+      const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      document.getElementById('map-timestamp').textContent = `${timeString} 時点`;
+
+      // データの反映
+      sheetData.forEach(row => {
+        const roomNum = row[0]; // A列: 部屋番号
+        const isDeparted = row[10] === true || row[10] === 'TRUE'; // K列: 出発済
+        const isInspected = row[11] === true || row[11] === 'TRUE'; // L列: 点検完了
+        
+        const cell = document.getElementById(`map-room-${roomNum}`);
+        if (cell) {
+          cell.className = 'map-cell'; // クラスリセット
+          if (isInspected) {
+            cell.classList.add('status-inspected');
+          } else if (isDeparted) {
+            cell.classList.add('status-cleaning');
+          } else {
+            cell.classList.add('status-staying');
+          }
         }
+      });
+    }
 
-        document.addEventListener('click', (e) => {
-            const active = document.activeElement;
-            if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
-                if (e.target !== active) {
-                    active.blur();
-                }
-            }
-        });
+    /* =========================================================
+       5. イベントリスナー・初期化
+       ========================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+      // マップ枠組みの初期生成
+      initMapGrid();
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                pauseRefreshUntil = 0;
-                if (!isFetching) {
-                    clearTimeout(refreshTimer);
-                    loadData();
-                }
-            }
-        });
+      // マップを開く（スナップショット描画）
+      document.getElementById('btn-map-toggle').addEventListener('click', () => {
+        isMapOpen = true; // バックグラウンドのリスト描画を停止
+        document.getElementById('map-modal').classList.remove('hidden');
+        updateMapColors(latestRoomData);
+      });
 
-        async function loadData() {
-            const scheduleNext = () => {
-                clearTimeout(refreshTimer);
-                refreshTimer = setTimeout(loadData, 5000);
-            };
+      // マップを閉じる
+      document.getElementById('btn-map-close').addEventListener('click', () => {
+        isMapOpen = false; // リスト描画を再開
+        document.getElementById('map-modal').classList.add('hidden');
+        // 閉じた瞬間に最新状態のリストを描画
+        renderList(latestRoomData); 
+      });
 
-            const active = document.activeElement;
-            if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
-                scheduleNext(); 
-                return; 
-            }
-            if (Date.now() < pauseRefreshUntil) {
-                scheduleNext();
-                return; 
-            }
-            
-            if (isFetching) return;
-            isFetching = true;
+      // マップ画面内での手動更新
+      document.getElementById('btn-map-refresh').addEventListener('click', () => {
+        // ※この時点の latestRoomData はバックグラウンドのfetchにより更新されています
+        updateMapColors(latestRoomData);
+      });
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+      // エラーからの手動復帰
+      document.getElementById('btn-retry').addEventListener('click', () => {
+        document.getElementById('error-overlay').classList.add('hidden');
+        fetchRoomData();
+      });
 
-            try {
-                const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
-                const response = await fetch(noCacheUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await response.json();
-
-                if (Date.now() < pauseRefreshUntil) {
-                    isFetching = false;
-                    scheduleNext();
-                    return;
-                }
-
-                if (data && data.rooms) {
-                    allRoomsData = data.rooms;
-                    masterStaffList = data.staffList || [];
-                } else if (Array.isArray(data)) {
-                    allRoomsData = data;
-                }
-
-                if (allRoomsData.length > 0) {
-                    renderAll(); 
-                }
-            } catch (e) {
-                console.error(e);
-                const isTimeout = e.name === 'AbortError';
-                const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
-                document.getElementById('room-list-container').innerHTML =
-                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
-            } finally {
-                isFetching = false; 
-                scheduleNext(); 
-            }
-        }
-
-        function getFloorNumber(roomName) {
-            const str = String(roomName);
-            const match = str.match(/^[1-6]/);
-            return match ? match[0] : null;
-        }
-
-        function getRoomStatusClass(room) {
-            const valB = room.B ? String(room.B).trim() : "";
-            const valH = room.H ? String(room.H).trim() : "";
-            const valJ = room.J ? String(room.J).trim() : "";
-            const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-            const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-
-            const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-            const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
-            const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-            const cond1 = (!isB_Empty || !isH_Empty); 
-
-            if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
-            else if (isDeparted && isCompleted) return 'status-departed';  
-            else if (isCompleted) return 'status-inspected'; 
-            else if (cond1) return 'status-standby';   
-            else return 'status-default';   
-        }
-
-        function renderAll() {
-            try {
-                if (allRoomsData.length === 0) return;
-                const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-                const container = document.getElementById('room-list-container'); 
-                const fragment = document.createDocumentFragment();
-                
-                allRoomsData.forEach(room => {
-                    const floor = getFloorNumber(room.A);
-                    if (floor !== null && !checkedFloors.includes(floor)) return;
-                    
-                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true');
-                    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-                    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-                    
-                    let jOptions = `<option value="">-未選択-</option>`;
-                    let currentJ = String(room.J || "").trim();
-                    let found = false;
-                    let staffList = masterStaffList.length > 0 ? masterStaffList : ["着", "フミ", "サワ", "ユキ", "ミキ", "有田", "岡田", "佐賀", "三村", "秋富", "荒川", "佐々木", "板倉", "鍋島", "杉岡", "ﾌﾛﾝﾄ", "－－"];
-                    
-                    staffList.forEach(n => {
-                        const selected = (currentJ === n) ? 'selected' : '';
-                        if(selected) found = true;
-                        jOptions += `<option value="${n}" ${selected}>${n}</option>`;
-                    });
-                    if(!found && currentJ !== "" && currentJ !== "－－") jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
-
-                    const card = document.createElement('div');
-                    card.className = `room-card ${getRoomStatusClass(room)}`;
-                    
-                    card.innerHTML = `
-                        <div class="room-header">
-                            <div class="header-info">
-                                <div class="room-no">${room.A}号室</div>
-                                <div class="room-user">担当: ${room.B || '未定'}</div>
-                                ${isEarly ? '<span class="early-badge">E</span>' : ''}
-                            </div>
-                            <label class="header-check-label">
-                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isCompleted ? 'checked' : ''}> 点検
-                            </label>
-                        </div>
-                        <div class="view-row">
-                            ${isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                            <div class="memo-inline">
-                                <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
-                            </div>
-                        </div>
-                        <div class="edit-grid">
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
-                        </div>
-                        <div class="bottom-controls">
-                            <div class="bottom-select-group group-summary">
-                                <label>摘要</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 8)">
-                                    <option value="">- なし -</option>
-                                    ${summaryList.map(h => `<option value="${h}" ${room.H===h?'selected':''}>${h}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="bottom-select-group group-checker">
-                                <label>確認者</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 10)">
-                                    ${jOptions}
-                                </select>
-                            </div>
-                        </div>`;
-                    fragment.appendChild(card);
-                });
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            } catch (e) { console.error(e); }
-        }
-
-        function updateValue(el, row, col) {
-            const val = el.type === 'checkbox' ? el.checked : el.value;
-            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
-            const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
-            if (targetRoom) targetRoom[colMap[col]] = val;
-            const card = el.closest('.room-card');
-            
-            if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
-            pauseRefreshUntil = Date.now() + 8000; 
-            
-            el.blur();
-
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
-                .catch(e => console.error('送信エラー:', e));
-        }
-    </script>
+      // 初回のデータ取得開始
+      fetchRoomData();
+    });
+  </script>
 </body>
 </html>
