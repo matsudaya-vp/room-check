@@ -86,9 +86,10 @@
         
         // 通信処理を堅牢化（isFetchingフラグ、try-catchエラーハンドリング）
         async function loadData() {
-            // 操作中の更新スキップ判定
-            if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return; 
-            if (Date.now() < pauseRefreshUntil) return; 
+        // 操作中の更新スキップ判定（チェックボックスのフォーカス残りは無視する）
+        const active = document.activeElement;
+        if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) return;
+        if (Date.now() < pauseRefreshUntil) return;
             
             // 重複通信の防止
             if (isFetching) return;
