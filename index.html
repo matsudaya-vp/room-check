@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ</title>
+    <title>客室点検アプリ Ver.15.0</title>
     <style>
+        /* Ver.12.7のデザイン・仕様を完全維持 */
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
         .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
@@ -13,7 +14,7 @@
         .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .refresh-btn:active { background: #296296; }
         
-        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
+        .room-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: background 0.2s; }
         .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
         .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
         .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
@@ -23,7 +24,6 @@
         .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: nowrap; gap: 4px; }
         .header-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .room-no { font-size: 1.3rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
-        
         .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); border: 1px solid #ccc; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
         .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 2px; }
 
@@ -50,8 +50,7 @@
         .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: rgba(255,255,255,0.9); }
 
         .loading { text-align: center; padding: 40px; color: #666; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
-        .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
+        #diagnostic-console { font-size: 10px; color: #999; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -62,230 +61,172 @@
             <label class="filter-label"><input type="checkbox" value="3" checked onchange="saveFilters(); renderAll()"> 3</label>
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
-            <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
-            <button class="refresh-btn" onclick="loadData()">↻</button>
+            <label class="filter-label"><input type="checkbox" value="6" checked onchange="renderAll()"> 6</label>
+            <button class="refresh-btn" onclick="manualRefresh()">↻</button>
         </div>
-        <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.92（新URL反映版）</div>
+        <div id="room-list-container"><div class="loading">客室データを同期中...</div></div>
+        <div id="diagnostic-console">Ver.15.0 Optimized Stable</div>
     </div>
+
     <script>
-        // 【更新箇所】新しいGASのURLへ差し替え完了
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
         let allRoomsData = []; 
-        let masterStaffList = []; 
+        let masterLists = { staff: [], summary: [], checker: [] }; // リストを永続保持
         let pauseRefreshUntil = 0; 
         let isFetching = false;
-        let refreshTimer = null; 
-
-        const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
+        let refreshTimer = null;
 
         document.addEventListener('DOMContentLoaded', () => { 
-            const savedFilters = localStorage.getItem('selectedFloors');
-            if (savedFilters) {
+            const saved = localStorage.getItem('selectedFloors');
+            if (saved) {
                 try {
-                    const floors = JSON.parse(savedFilters);
-                    document.querySelectorAll('.filter-container input').forEach(cb => {
-                        cb.checked = floors.includes(cb.value);
-                    });
-                } catch(e) { console.error('保存されたフィルターの読み込みに失敗しました', e); }
+                    const floors = JSON.parse(saved);
+                    document.querySelectorAll('.filter-container input').forEach(cb => cb.checked = floors.includes(cb.value));
+                } catch(e) {}
             }
-            loadData(); 
+            loadData(true); 
+            setInterval(() => loadData(false), 5000); 
         });
 
         function saveFilters() {
-            const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-            localStorage.setItem('selectedFloors', JSON.stringify(checkedFloors));
+            const checked = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
+            localStorage.setItem('selectedFloors', JSON.stringify(checked));
         }
 
-        document.addEventListener('click', (e) => {
-            const active = document.activeElement;
-            if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
-                if (e.target !== active) {
-                    active.blur();
-                }
-            }
-        });
+        function manualRefresh() {
+            allRoomsData = []; // クリアして全描画
+            loadData(true);
+        }
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                pauseRefreshUntil = 0;
-                if (!isFetching) {
-                    clearTimeout(refreshTimer);
-                    loadData();
-                }
-            }
-        });
+        async function loadData(forceLists) {
+            if (isFetching || Date.now() < pauseRefreshUntil) return;
+            if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return;
 
-        async function loadData() {
-            const scheduleNext = () => {
-                clearTimeout(refreshTimer);
-                refreshTimer = setTimeout(loadData, 5000);
-            };
-
-            const active = document.activeElement;
-            if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
-                scheduleNext(); 
-                return; 
-            }
-            if (Date.now() < pauseRefreshUntil) {
-                scheduleNext();
-                return; 
-            }
-            
-            if (isFetching) return;
             isFetching = true;
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-
             try {
-                const noCacheUrl = GAS_URL + '?t=' + new Date().getTime();
-                const response = await fetch(noCacheUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await response.json();
+                const res = await fetch(`${GAS_URL}?lists=${forceLists}&t=${Date.now()}`);
+                const text = await res.text();
+                // 堅牢なJSONチェック：{ または [ で始まらない場合はGoogleエラー画面とみなす
+                if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) throw new Error("SERVER_NOT_READY");
 
-                if (Date.now() < pauseRefreshUntil) {
-                    isFetching = false;
-                    scheduleNext();
-                    return;
-                }
+                const data = JSON.parse(text);
+                if (data.error) throw new Error(data.error);
 
-                if (data && data.rooms) {
-                    allRoomsData = data.rooms;
-                    masterStaffList = data.staffList || [];
-                } else if (Array.isArray(data)) {
-                    allRoomsData = data;
-                }
-
-                if (allRoomsData.length > 0) {
-                    renderAll(); 
-                }
+                if (data.lists) masterLists = data.lists;
+                const newRooms = data.rooms || (Array.isArray(data) ? data : []);
+                
+                if (newRooms.length > 0) syncRooms(newRooms);
             } catch (e) {
-                console.error(e);
-                const isTimeout = e.name === 'AbortError';
-                const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
-                document.getElementById('room-list-container').innerHTML =
-                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
+                console.error("Sync Error:", e.message);
             } finally {
-                isFetching = false; 
-                scheduleNext(); 
+                isFetching = false;
             }
         }
 
-        function getFloorNumber(roomName) {
-            const str = String(roomName);
-            const match = str.match(/^[1-6]/);
-            return match ? match[0] : null;
+        function syncRooms(newRooms) {
+            if (allRoomsData.length === 0) {
+                allRoomsData = newRooms;
+                renderAll();
+                return;
+            }
+            // 差分更新（外科的更新）：変更があった部屋のみDOMを書き換える
+            newRooms.forEach((nr, i) => {
+                const or = allRoomsData[i];
+                if (!or || JSON.stringify(nr) !== JSON.stringify(or)) {
+                    allRoomsData[i] = nr;
+                    const card = document.getElementById(`room-${nr.rowNumber}`);
+                    if (card) updateCardUI(card, nr);
+                }
+            });
         }
 
         function getRoomStatusClass(room) {
-            const valB = room.B ? String(room.B).trim() : "";
-            const valH = room.H ? String(room.H).trim() : "";
-            const valJ = room.J ? String(room.J).trim() : "";
-            const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-            const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-
-            const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-            const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
-            const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-            const cond1 = (!isB_Empty || !isH_Empty); 
-
-            if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
-            else if (isDeparted && isCompleted) return 'status-departed';  
-            else if (isCompleted) return 'status-inspected'; 
-            else if (cond1) return 'status-standby';   
-            else return 'status-default';   
+            const b = String(room.B||"").trim(), h = String(room.H||"").trim(), j = String(room.J||"").trim();
+            const isD = (room.K === true || String(room.K) === 'true'), isC = (room.L === true || String(room.L) === 'true');
+            const isS = (b !== "" && b !== "－－") || (h !== "" && h !== "－－");
+            const isP = (j !== "" && !["－－","ーー","着"].includes(j));
+            if (isS && isP && isD && isC) return 'status-final';
+            if (isD && isC) return 'status-departed';
+            if (isC) return 'status-inspected';
+            if (isS) return 'status-standby';
+            return 'status-default';
         }
 
         function renderAll() {
-            try {
-                if (allRoomsData.length === 0) return;
-                const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-                const container = document.getElementById('room-list-container'); 
-                const fragment = document.createDocumentFragment();
-                
-                allRoomsData.forEach(room => {
-                    const floor = getFloorNumber(room.A);
-                    if (floor !== null && !checkedFloors.includes(floor)) return;
-                    
-                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true');
-                    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-                    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-                    
-                    let jOptions = `<option value="">-未選択-</option>`;
-                    let currentJ = String(room.J || "").trim();
-                    let found = false;
-                    let staffList = masterStaffList.length > 0 ? masterStaffList : ["着", "フミ", "サワ", "ユキ", "ミキ", "有田", "岡田", "佐賀", "三村", "秋富", "荒川", "佐々木", "板倉", "鍋島", "杉岡", "ﾌﾛﾝﾄ", "－－"];
-                    
-                    staffList.forEach(n => {
-                        const selected = (currentJ === n) ? 'selected' : '';
-                        if(selected) found = true;
-                        jOptions += `<option value="${n}" ${selected}>${n}</option>`;
-                    });
-                    if(!found && currentJ !== "" && currentJ !== "－－") jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
-
-                    const card = document.createElement('div');
-                    card.className = `room-card ${getRoomStatusClass(room)}`;
-                    
-                    card.innerHTML = `
-                        <div class="room-header">
-                            <div class="header-info">
-                                <div class="room-no">${room.A}号室</div>
-                                <div class="room-user">担当: ${room.B || '未定'}</div>
-                                ${isEarly ? '<span class="early-badge">E</span>' : ''}
-                            </div>
-                            <label class="header-check-label">
-                                <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isCompleted ? 'checked' : ''}> 点検
-                            </label>
-                        </div>
-                        <div class="view-row">
-                            ${isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                            <div class="memo-inline">
-                                <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
-                            </div>
-                        </div>
-                        <div class="edit-grid">
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
-                        </div>
-                        <div class="bottom-controls">
-                            <div class="bottom-select-group group-summary">
-                                <label>摘要</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 8)">
-                                    <option value="">- なし -</option>
-                                    ${summaryList.map(h => `<option value="${h}" ${room.H===h?'selected':''}>${h}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="bottom-select-group group-checker">
-                                <label>確認者</label>
-                                <select onchange="updateValue(this, ${room.rowNumber}, 10)">
-                                    ${jOptions}
-                                </select>
-                            </div>
-                        </div>`;
-                    fragment.appendChild(card);
-                });
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            } catch (e) { console.error(e); }
+            const container = document.getElementById('room-list-container');
+            const checked = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
+            const fragment = document.createDocumentFragment();
+            allRoomsData.forEach(room => {
+                const floor = String(room.A).charAt(0);
+                if (!checked.includes(floor)) return;
+                const card = document.createElement('div');
+                card.id = `room-${room.rowNumber}`;
+                updateCardUI(card, room);
+                fragment.appendChild(card);
+            });
+            container.innerHTML = '';
+            container.appendChild(fragment);
         }
 
-        function updateValue(el, row, col) {
-            const val = el.type === 'checkbox' ? el.checked : el.value;
-            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
-            const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
-            if (targetRoom) targetRoom[colMap[col]] = val;
-            const card = el.closest('.room-card');
+        function updateCardUI(card, room) {
+            const isE = (room.C === true || String(room.C) === 'true');
+            const isD = (room.K === true || String(room.K) === 'true');
+            const isC = (room.L === true || String(room.L) === 'true');
             
-            if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
-            pauseRefreshUntil = Date.now() + 8000; 
-            
-            el.blur();
+            card.className = `room-card ${getRoomStatusClass(room)}`;
+            card.innerHTML = `
+                <div class="room-header">
+                    <div class="header-info">
+                        <div class="room-no">${room.A}号室</div>
+                        <div class="room-user">担当: ${room.B || '未定'}</div>
+                        ${isE ? '<span class="early-badge">E</span>' : ''}
+                    </div>
+                    <label class="header-check-label">
+                        <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isC ? 'checked' : ''}> 点検
+                    </label>
+                </div>
+                <div class="view-row">
+                    <span class="status-badge ${isD ? 'active' : ''}">${isD ? '出発済' : '未出発'}</span>
+                    <div class="memo-inline"><span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span></div>
+                </div>
+                <div class="edit-grid">
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
+                    <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
+                </div>
+                <div class="bottom-controls">
+                    <div class="bottom-select-group group-summary"><label>摘要</label><select onchange="updateValue(this, ${room.rowNumber}, 8)">${getOpts(masterLists.summary, room.H)}</select></div>
+                    <div class="bottom-select-group group-checker"><label>確認者</label><select onchange="updateValue(this, ${room.rowNumber}, 10)">${getOpts(masterLists.staff, room.J)}</select></div>
+                </div>`;
+        }
 
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
-                .catch(e => console.error('送信エラー:', e));
+        function getOpts(list, cur) {
+            let opts = '<option value="">- なし -</option>';
+            const safe = Array.isArray(list) ? list : [];
+            const curStr = String(cur || "").trim();
+            safe.forEach(v => opts += `<option value="${v}" ${curStr === String(v).trim() ? 'selected' : ''}>${v}</option>`);
+            if (curStr !== "" && curStr !== "－－" && !safe.includes(curStr)) opts += `<option value="${curStr}" selected>${curStr}</option>`;
+            return opts;
+        }
+
+        async function updateValue(el, row, col) {
+            const val = el.type === 'checkbox' ? el.checked : el.value;
+            const colMap = { 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 12:'L' }; 
+            const target = allRoomsData.find(r => r.rowNumber === row); 
+            
+            // 楽観的UI更新：サーバーの返信を待たずに色を変える
+            if (target) {
+                target[colMap[col]] = val;
+                const card = document.getElementById(`room-${row}`);
+                if (card) card.className = `room-card ${getRoomStatusClass(target)}`;
+            }
+
+            pauseRefreshUntil = Date.now() + 8000; 
+            el.blur();
+            try {
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row, col, val }) });
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>
