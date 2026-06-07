@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ2</title>
+    <title>客室点検アプリ</title>
     <style>
         body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
         #app-container { max-width: 600px; margin: 0 auto; }
@@ -54,28 +54,6 @@
         .loading { text-align: center; padding: 40px; color: #666; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
         .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
-
-        /* =========================================
-           【追加2】マップ用スタイル
-           ========================================= */
-        .map-cell {
-            aspect-ratio: 1 / 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            border: 1px solid #a0aec0;
-            border-radius: 4px;
-            background-color: #fff;
-            font-size: 0.95rem;
-            color: #333;
-        }
-        .map-cell.empty { background-color: transparent; border: none; }
-
-        /* マップの色（メインアプリの色合いに準拠） */
-        .status-map-inspected { background-color: #63b3ed; color: #fff; border-color: #3182ce; } /* 点検完了:青 */
-        .status-map-cleaning  { background-color: #f6e05e; color: #744210; border-color: #d69e2e; } /* 出発済(清掃中):黄 */
-        .status-map-staying   { background-color: #a0aec0; color: #fff; border-color: #718096; } /* 滞在:灰 */
     </style>
 </head>
 <body>
@@ -92,33 +70,13 @@
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
         <div class="version-info">Ver.12.8（パフォーマンス最適化・堅牢化対応）</div>
     </div>
-
-    <button id="btn-map-toggle" class="map-btn" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:10px 16px; background-color:#4a5568; color:#fff; border-radius:6px; border:none; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">🗺 準備状況</button>
-
-    <div id="map-modal" class="hidden" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
-        <div>
-          <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館準備状況</h2>
-          <span id="map-timestamp" style="font-size:0.8rem; color:#718096;">--:-- 時点</span>
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button id="btn-map-refresh" style="padding:8px 12px; border:1px solid #cbd5e0; background:#edf2f7; color:#4a5568; font-weight:bold; border-radius:4px;">↻ 更新</button>
-          <button id="btn-map-close" style="padding:8px 12px; background:#e53e3e; color:#fff; border:none; font-weight:bold; border-radius:4px;">✕ 閉じる</button>
-        </div>
-      </div>
-      <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px;"></div>
-    </div>
-
     <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK2eeWH-9cTWuBz7omejE_ELuR8hj2ejiHuodfSOELKhrXXptR8NP64oj0KomkzoNgAw/exec';
 let allRoomsData = []; 
 let masterStaffList = []; 
 let pauseRefreshUntil = 0; 
 let isFetching = false;
-let refreshTimer = null; 
-
-// 【追加3の一部】マップ用グローバル変数
-let latestRoomData = []; 
+let refreshTimer = null; // 【追加】数珠つなぎタイマー用の変数
 
 const summaryList = ["確認済", "部屋の臭い", "忘れ物あり", "備品破損あり", "出発前 ※引継済", "その他 ※連絡済", "滞在", "滞在 ※掃除不要", "会食場", "備品貸出 ※要回収", "予備部屋", "緊急時用", "使用不可", "－－"];
 
@@ -126,15 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData(); 
 });
 
+// 【追加】1. 画面全体のタップ監視（キャンセル時のフォーカス残り防止）
 document.addEventListener('click', (e) => {
     const active = document.activeElement;
     if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
+        // タップした場所が入力要素自身でなければ、強制的にフォーカスを外す
         if (e.target !== active) {
             active.blur();
         }
     }
 });
 
+// スリープやタブ切り替えからの復帰時に更新を再開
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         pauseRefreshUntil = 0;
@@ -146,6 +107,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function loadData() {
+    // 【追加】2. タイマーの数珠つなぎ化（処理の最後に次を予約する）
     const scheduleNext = () => {
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(loadData, 5000);
@@ -153,7 +115,7 @@ async function loadData() {
 
     const active = document.activeElement;
     if (active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
-        scheduleNext(); 
+        scheduleNext(); // スキップ時も次は予約する
         return; 
     }
     if (Date.now() < pauseRefreshUntil) {
@@ -164,6 +126,7 @@ async function loadData() {
     if (isFetching) return;
     isFetching = true;
 
+    // 通信のタイムアウト設定（8秒）
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -186,16 +149,6 @@ async function loadData() {
             allRoomsData = data;
         }
 
-        // =========================================
-        // 【追加4】最新データをマップ用に横流しする
-        // =========================================
-        latestRoomData = allRoomsData;
-
-// ★追加：マップ画面が開いている場合は、自動でマップの色も最新化する
-        if (document.getElementById('map-modal').style.display !== 'none') {
-            updateMapColors(latestRoomData);
-        }
-
         if (allRoomsData.length > 0) {
             renderAll(); 
         }
@@ -207,7 +160,7 @@ async function loadData() {
             `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>?ボタンで再試行してください</div>`;
     } finally {
         isFetching = false; 
-        scheduleNext(); 
+        scheduleNext(); // 成功・失敗に関わらず確実に次を予約
     }
 }
 
@@ -229,7 +182,7 @@ function getRoomStatusClass(room) {
     const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
     const cond1 = (!isB_Empty || !isH_Empty); 
 
-    if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';      
+    if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';     
     else if (isDeparted && isCompleted) return 'status-departed';  
     else if (isCompleted) return 'status-inspected'; 
     else if (cond1) return 'status-standby';   
@@ -321,87 +274,13 @@ function updateValue(el, row, col) {
     if (card && targetRoom) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
     pauseRefreshUntil = Date.now() + 8000; 
     
+    // 操作完了後にフォーカス状態を強制解除
     el.blur();
 
+    // POST送信
     fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
         .catch(e => console.error('送信エラー:', e));
 }
-
-// =========================================
-// 【追加3】マップ専用ロジックとイベントリスナー
-// =========================================
-const mapLayout = [
-  [601, 602, 603, null, 605, null, null],
-  [501, 502, 503, null, 505, null, null],
-  [401, 402, 403, 404, 405, 406, null],
-  [301, 302, 303, 304, 305, 306, 307 ],
-  [201, 202, 203, null, 205, 207, 208 ],
-  [101, 102, 103, null, 105, 107, 108 ]
-];
-
-function initMapGrid() {
-  const gridContainer = document.getElementById('map-grid');
-  gridContainer.innerHTML = ''; 
-  mapLayout.forEach(row => {
-    row.forEach(roomNum => {
-      const cell = document.createElement('div');
-      if (roomNum === null) {
-        cell.className = 'map-cell empty';
-      } else {
-        cell.className = 'map-cell';
-        cell.id = `map-room-${roomNum}`;
-        cell.textContent = roomNum;
-      }
-      gridContainer.appendChild(cell);
-    });
-  });
-}
-
-function updateMapColors(sheetData) {
-  if (!sheetData || sheetData.length === 0) return;
-  
-  const now = new Date();
-  document.getElementById('map-timestamp').textContent = 
-    `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 時点`;
-
-  // 元データの構造(オブジェクト)に合わせて読み取るように修正
-  sheetData.forEach(room => {
-    const roomNum = room.A; 
-    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-    
-    const cell = document.getElementById(`map-room-${roomNum}`);
-    if (cell) {
-      cell.className = 'map-cell'; // クラスリセット
-      
-      // 色の適用（点検完了 ＞ 出発済 ＞ 滞在）
-      if (isCompleted) {
-        cell.classList.add('status-map-inspected');
-      } else if (isDeparted) {
-        cell.classList.add('status-map-cleaning');
-      } else {
-        cell.classList.add('status-map-staying');
-      }
-    }
-  });
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  initMapGrid();
-
-  document.getElementById('btn-map-toggle').addEventListener('click', () => {
-    document.getElementById('map-modal').style.display = 'flex';
-    updateMapColors(latestRoomData);
-  });
-
-  document.getElementById('btn-map-close').addEventListener('click', () => {
-    document.getElementById('map-modal').style.display = 'none';
-  });
-
-  document.getElementById('btn-map-refresh').addEventListener('click', () => {
-    updateMapColors(latestRoomData);
-  });
-});
     </script>
 </body>
 </html>
