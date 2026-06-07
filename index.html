@@ -191,6 +191,11 @@ async function loadData() {
         // =========================================
         latestRoomData = allRoomsData;
 
+// ★追加：マップ画面が開いている場合は、自動でマップの色も最新化する
+        if (document.getElementById('map-modal').style.display !== 'none') {
+            updateMapColors(latestRoomData);
+        }
+
         if (allRoomsData.length > 0) {
             renderAll(); 
         }
