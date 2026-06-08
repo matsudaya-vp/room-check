@@ -76,7 +76,7 @@
 <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
         <div>
-          <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館準備状況</h2>
+          <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館状況</h2>
           <span id="map-timestamp" style="font-size:0.8rem; color:#718096;">--:-- 時点</span>
         </div>
         <div style="display:flex; gap:8px;">
@@ -84,6 +84,17 @@
           <button id="btn-map-close" style="padding:8px 12px; background:#e53e3e; color:#fff; border:none; font-weight:bold; border-radius:4px;">✕ 閉じる</button>
         </div>
       </div>
+      
+      <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px; overflow-y: auto;"></div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 0 16px 24px; font-size: 0.85rem; color: #4a5568; justify-content: center; background: #f7fafc;">
+        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #22c55e; border: 1px solid #16a34a; border-radius: 3px;"></span>最終完了</div>
+        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #f97316; border: 1px solid #ea580c; border-radius: 3px;"></span>出発済</div>
+        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #3d85c6; border: 1px solid #296296; border-radius: 3px;"></span>点検済</div>
+        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border: 1px solid #cbd5e0; border-radius: 3px;"></span>準備中</div>
+        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #666666; border: 1px solid #555555; border-radius: 3px;"></span>未使用</div>
+      </div>
+    </div>
       
       <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 16px 0; font-size: 0.85rem; color: #4a5568; justify-content: center; background: #f7fafc;">
         <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #22c55e; border: 1px solid #16a34a; border-radius: 3px;"></span>最終完了</div>
