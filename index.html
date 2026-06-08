@@ -69,7 +69,7 @@
             <button class="refresh-btn" onclick="loadData(true)">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.13.1（凡例位置調整・重複解消版）</div>
+        <div class="version-info">Ver.13.2（完全統合・最適化版）</div>
     </div>
 
     <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">全館状況</button>
@@ -97,7 +97,7 @@
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzHr8bjR34fOmnjAue2Q2CRFpmHo3d7A2kQ7s1f6CX-pAKhhJ2eqhb5KQ4Oin_e_8AzxQ/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8gF3oMCAlKyHpJd9oR9ONdene1jGiOl7EH1Uz0Vv4HeTGCr2gKabsaC1cRRtpoBF86g/exec';
         const POLLING_INTERVAL = 10000; 
 
         let allRoomsData = []; 
@@ -323,6 +323,7 @@
                     const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
                     
+                    // 確認者プルダウン
                     let jOptions = `<option value="">-未選択-</option>`;
                     let currentJ = String(room.J || "").trim();
                     let jFound = false;
@@ -331,10 +332,11 @@
                         if(selected) jFound = true;
                         jOptions += `<option value="${n}" ${selected}>${n}</option>`;
                     });
-                    if(!jFound && currentJ !== "" && currentJ !== "－－") {
+                    if(!jFound && currentJ !== "") {
                         jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
                     }
 
+                    // 摘要プルダウン
                     let hOptions = `<option value="">- なし -</option>`;
                     let currentH = String(room.H || "").trim();
                     let hFound = false;
@@ -343,7 +345,7 @@
                         if(selected) hFound = true;
                         hOptions += `<option value="${h}" ${selected}>${h}</option>`;
                     });
-                    if(!hFound && currentH !== "" && currentH !== "－－") {
+                    if(!hFound && currentH !== "") {
                         hOptions += `<option value="${currentH}" selected>${currentH}</option>`;
                     }
 
