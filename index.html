@@ -53,7 +53,6 @@
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: bold; }
         .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; }
 
-        /* 追加: マップ用のスタイル */
         .map-cell { aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 1px solid #a0aec0; border-radius: 4px; background-color: #fff; font-size: 0.95rem; color: #333; transition: all 0.2s; }
         .map-cell.empty { background-color: transparent; border: none; }
     </style>
@@ -67,13 +66,13 @@
             <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
             <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
             <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
-            <button class="refresh-btn" onclick="loadData(true)">↻</button>
+            <button class="refresh-btn" onclick="loadData(true)">?</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.12.93（マップ同期・省エネ通信版）</div>
+        <div class="version-info">Ver.12.94（全館状況・初期カラー変更版）</div>
     </div>
 
-    <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">🗺 準備状況</button>
+    <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">全館状況</button>
     <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
         <div>
@@ -81,8 +80,8 @@
           <span id="map-timestamp" style="font-size:0.8rem; color:#718096;">--:-- 時点</span>
         </div>
         <div style="display:flex; gap:8px;">
-          <button id="btn-map-refresh" style="padding:8px 12px; border:1px solid #cbd5e0; background:#edf2f7; color:#4a5568; font-weight:bold; border-radius:4px;">↻ 更新</button>
-          <button id="btn-map-close" style="padding:8px 12px; background:#e53e3e; color:#fff; border:none; font-weight:bold; border-radius:4px;">✕ 閉じる</button>
+          <button id="btn-map-refresh" style="padding:8px 12px; border:1px solid #cbd5e0; background:#edf2f7; color:#4a5568; font-weight:bold; border-radius:4px;">? 更新</button>
+          <button id="btn-map-close" style="padding:8px 12px; background:#e53e3e; color:#fff; border:none; font-weight:bold; border-radius:4px;">? 閉じる</button>
         </div>
       </div>
       <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px; overflow-y: auto;"></div>
@@ -91,7 +90,6 @@
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
         
-        // ポーリング間隔を10秒に設定
         const POLLING_INTERVAL = 10000; 
 
         let allRoomsData = []; 
@@ -143,7 +141,6 @@
             if (document.visibilityState === 'visible') {
                 pauseRefreshUntil = 0;
                 const isMapOpen = document.getElementById('map-modal').style.display === 'flex';
-                // マップが開いていない場合のみ即時フェッチを再開
                 if (!isFetching && !isMapOpen) {
                     clearTimeout(refreshTimer);
                     loadData(true);
@@ -178,7 +175,6 @@
             const isMapOpen = document.getElementById('map-modal').style.display === 'flex';
             const isHidden = document.hidden;
 
-            // マップ展開中または画面非表示時はバックグラウンド通信をスキップ
             if (!force && (isFetching || Date.now() < pauseRefreshUntil || isMapOpen || isHidden)) {
                 scheduleNext();
                 return; 
@@ -224,7 +220,7 @@
                 const isTimeout = e.name === 'AbortError';
                 const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
                 document.getElementById('room-list-container').innerHTML =
-                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
+                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>?ボタンで再試行してください</div>`;
             } finally {
                 isFetching = false; 
                 scheduleNext(); 
@@ -255,7 +251,8 @@
             'status-departed':  { bg: '#f97316', text: '#ffffff', border: '#ea580c' }, 
             'status-inspected': { bg: '#3d85c6', text: '#ffffff', border: '#296296' }, 
             'status-standby':   { bg: '#e2e8f0', text: '#2d3748', border: '#cbd5e0' }, 
-            'status-default':   { bg: '#b0b5b9', text: '#ffffff', border: '#6b7280' }  
+            // 変更箇所: 初期状態のカラーを #666666 に設定
+            'status-default':   { bg: '#666666', text: '#ffffff', border: '#555555' }  
           };
 
           rooms.forEach(room => {
