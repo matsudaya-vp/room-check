@@ -92,7 +92,7 @@
 
 <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
-        let allRoomsData = []; 
+let allRoomsData = []; 
         let masterStaffList = []; 
         let pauseRefreshUntil = 0; 
         let isFetching = false;
@@ -131,7 +131,6 @@
         }
 
         async function loadData(force = false) {
-            // 強制フェッチでない場合、通信中またはPOST更新待機中はフェッチをスキップ
             if (!force && (isFetching || Date.now() < pauseRefreshUntil)) {
                 clearTimeout(refreshTimer);
                 refreshTimer = setTimeout(() => loadData(), 5000);
@@ -170,14 +169,10 @@
             const timestampEl = document.getElementById('map-timestamp');
             if (timestampEl) timestampEl.textContent = '取得中...';
             
-            // POST送信の直後に手動更新が押された場合、古いデータでの上書きを防ぐ
             if (Date.now() < pauseRefreshUntil) {
-                console.warn("データ更新処理中のため、手元の最新状態を表示します。");
                 renderMapColors(allRoomsData);
                 return;
             }
-            
-            // 統合されたloadData関数を使用して安全にフェッチを実行
             await loadData(true);
         }
 
@@ -188,16 +183,31 @@
           if (timestampEl) {
               timestampEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 更新`;
           }
+
+          // 【新機能】メイン画面の5つの状態に完全連動するカラーマップ定義
+          // グリッド表示で見やすくなるよう、視認性の高い配色に調整しています
+          const mapStyles = {
+            'status-final':     { bg: '#22c55e', text: '#ffffff', border: '#16a34a' }, // 最終完了（緑）
+            'status-departed':  { bg: '#f97316', text: '#ffffff', border: '#ea580c' }, // 出発・点検済（橙）
+            'status-inspected': { bg: '#3d85c6', text: '#ffffff', border: '#296296' }, // 点検済（青）
+            'status-standby':   { bg: '#e2e8f0', text: '#2d3748', border: '#cbd5e0' }, // 準備中（薄灰）
+            'status-default':   { bg: '#b0b5b9', text: '#ffffff', border: '#6b7280' }  // 初期状態（濃灰）
+          };
+
           rooms.forEach(room => {
             const roomNum = String(room.A); 
-            const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-            const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
             const cell = document.getElementById(`map-room-${roomNum}`);
             if (cell) {
-              cell.className = 'map-cell';
-              if (isCompleted) cell.classList.add('status-map-inspected');
-              else if (isDeparted) cell.classList.add('status-map-cleaning');
-              else cell.classList.add('status-map-staying');
+              cell.className = 'map-cell'; // 既存の古いマップ用CSSクラスをリセット
+              
+              // メイン画面と同一の共通ロジックからステータス（文字列）を取得
+              const currentStatus = getRoomStatusClass(room);
+              const style = mapStyles[currentStatus] || mapStyles['status-default'];
+              
+              // インラインスタイルで配色を強制適用（HTML/CSSの書き換えなし）
+              cell.style.backgroundColor = style.bg;
+              cell.style.color = style.text;
+              cell.style.borderColor = style.border;
             }
           });
         }
@@ -262,7 +272,7 @@
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
                             <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                            <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
+                            <label class="input-label"><input type="checkbox" onchange="withCheckbox(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
                         </div>
                         <div class="bottom-controls">
                             <div class="bottom-select-group group-summary">
@@ -292,7 +302,7 @@
                 targetRoom[colMap[col]] = val;
                 const card = el.closest('.room-card');
                 if (card) card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
-                // ローカルデータの更新を即座にマップにも反映させる
+                // リスト操作時、裏側の非表示DOM（マップ）にも即座に新5色を反映
                 renderMapColors(allRoomsData); 
             }
             pauseRefreshUntil = Date.now() + 8000; 
@@ -303,7 +313,6 @@
 
         document.getElementById('btn-map-toggle').addEventListener('click', () => {
             document.getElementById('map-modal').style.display = 'flex';
-            // 【修正点】直接GASへフェッチせず、手元の最新化されたローカルデータを即時描画する
             renderMapColors(allRoomsData);
         });
 
