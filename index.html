@@ -69,11 +69,11 @@
             <button class="refresh-btn" onclick="loadData(true)">↻</button>
         </div>
         <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.13.0（マスタ動的取得・文字化け修正版）</div>
+        <div class="version-info">Ver.13.1（凡例位置調整・重複解消版）</div>
     </div>
 
     <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">全館状況</button>
-<div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
+    <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
         <div>
           <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館状況</h2>
@@ -95,37 +95,15 @@
         <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #666666; border: 1px solid #555555; border-radius: 3px;"></span>未使用</div>
       </div>
     </div>
-      
-      <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px; overflow-y: auto;"></div>
-
-      <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 0 16px 24px; font-size: 0.85rem; color: #4a5568; justify-content: center; background: #f7fafc;">
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #22c55e; border: 1px solid #16a34a; border-radius: 3px;"></span>最終完了</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #f97316; border: 1px solid #ea580c; border-radius: 3px;"></span>出発済</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #3d85c6; border: 1px solid #296296; border-radius: 3px;"></span>点検済</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border: 1px solid #cbd5e0; border-radius: 3px;"></span>準備中</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #666666; border: 1px solid #555555; border-radius: 3px;"></span>未使用</div>
-      </div>
-    </div>
-      
-      <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 16px 0; font-size: 0.85rem; color: #4a5568; justify-content: center; background: #f7fafc;">
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #22c55e; border: 1px solid #16a34a; border-radius: 3px;"></span>最終完了</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #f97316; border: 1px solid #ea580c; border-radius: 3px;"></span>出発済</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #3d85c6; border: 1px solid #296296; border-radius: 3px;"></span>点検済</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border: 1px solid #cbd5e0; border-radius: 3px;"></span>準備中</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #666666; border: 1px solid #555555; border-radius: 3px;"></span>未使用</div>
-      </div>
-
-      <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px; overflow-y: auto;"></div>
-    </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzHr8bjR34fOmnjAue2Q2CRFpmHo3d7A2kQ7s1f6CX-pAKhhJ2eqhb5KQ4Oin_e_8AzxQ/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpe9ClGeNKWe8-rIuIDzl5snUVRYDQMWqmulw3S3H4pGm81OOmWgU11Wycxk5sr02L/exec';
         const POLLING_INTERVAL = 10000; 
 
         let allRoomsData = []; 
-        let summaryList = []; // 初回に取得
-        let masterStaffList = []; // 初回に取得
-        let isMasterLoaded = false; // マスタ取得フラグ
+        let summaryList = []; 
+        let masterStaffList = []; 
+        let isMasterLoaded = false; 
 
         let pauseRefreshUntil = 0; 
         let isFetching = false;
@@ -224,7 +202,6 @@
             const timeoutId = setTimeout(() => controller.abort(), 8000);
 
             try {
-                // 初回のみ init=true を付与してマスタデータ取得を要求
                 const initParam = !isMasterLoaded ? '&init=true' : '';
                 const noCacheUrl = GAS_URL + '?t=' + new Date().getTime() + initParam;
                 
@@ -238,12 +215,10 @@
                     return;
                 }
 
-                // マスタデータの受け取り
                 if (data.summaryList) summaryList = data.summaryList;
                 if (data.staffList) masterStaffList = data.staffList;
-                isMasterLoaded = true; // 取得完了フラグを立てる
+                isMasterLoaded = true; 
 
-                // 客室データの受け取り
                 if (data && data.rooms) {
                     allRoomsData = data.rooms;
                 } else if (Array.isArray(data)) {
@@ -348,7 +323,6 @@
                     const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
                     const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
                     
-                    // 確認者（J列）のプルダウン生成
                     let jOptions = `<option value="">-未選択-</option>`;
                     let currentJ = String(room.J || "").trim();
                     let jFound = false;
@@ -361,7 +335,6 @@
                         jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
                     }
 
-                    // 摘要（H列）のプルダウン生成
                     let hOptions = `<option value="">- なし -</option>`;
                     let currentH = String(room.H || "").trim();
                     let hFound = false;
