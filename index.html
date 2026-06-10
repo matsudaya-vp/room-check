@@ -115,7 +115,7 @@
 
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8gF3oMCAlKyHpJd9oR9ONdene1jGiOl7EH1Uz0Vv4HeTGCr2gKabsaC1cRRtpoBF86g/exec';
-        const POLLING_INTERVAL = 10000; 
+        const POLLING_INTERVAL = 3000; 
 
         let allRoomsData = []; 
         let summaryList = []; 
@@ -424,7 +424,7 @@
                 card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
                 renderMapColors(allRoomsData);
             }
-            pauseRefreshUntil = Date.now() + 8000; 
+            pauseRefreshUntil = Date.now() + 2000; 
             
             el.blur();
 
