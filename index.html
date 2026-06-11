@@ -73,7 +73,7 @@
     </div>
 
     <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">全館状況</button>
-<div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
+   <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
         <div>
           <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館状況</h2>
@@ -114,8 +114,8 @@
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8gF3oMCAlKyHpJd9oR9ONdene1jGiOl7EH1Uz0Vv4HeTGCr2gKabsaC1cRRtpoBF86g/exec';
-        const POLLING_INTERVAL = 3000; 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyqqrs0pMujg9DFLkxKeJzAk7lDs-RMfxMmjuLqRRBB3PLvL_1s0NFHKhPpocvAkdrH/exec';
+        const POLLING_INTERVAL = 10000; 
 
         let allRoomsData = []; 
         let summaryList = []; 
@@ -424,7 +424,7 @@
                 card.className = `room-card ${getRoomStatusClass(targetRoom)}`;
                 renderMapColors(allRoomsData);
             }
-            pauseRefreshUntil = Date.now() + 2000; 
+            pauseRefreshUntil = Date.now() + 8000; 
             
             el.blur();
 
