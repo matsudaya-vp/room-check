@@ -281,7 +281,7 @@
 
     .accordion-panel {
       display: none;
-      padding-top: 4px;
+      padding-top: 10px;
     }
 
     .accordion-panel.is-open {
@@ -460,7 +460,18 @@
       }
 
       .bottom-controls {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 8px;
+      }
+
+      .group-summary {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .group-checker {
+        flex: 0 0 152px;
+        min-width: 0;
       }
 
       .map-cell {
@@ -483,7 +494,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.14.4</div>
+    <div class="version-info">CheckNest Ver.14.5</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
