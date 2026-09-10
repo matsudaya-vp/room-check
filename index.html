@@ -1,501 +1,1362 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客室点検アプリ</title>
-    <style>
-        body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; color: #333; }
-        #app-container { max-width: 600px; margin: 0 auto; }
-        .filter-container { display: flex; flex-wrap: nowrap; gap: 4px; background: white; padding: 6px 4px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); justify-content: center; align-items: center; overflow-x: auto; }
-        .filter-label { display: flex; align-items: center; gap: 4px; font-weight: bold; cursor: pointer; background: #f1f5f9; padding: 5px 8px; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; }
-        .filter-label input { width: 14px; height: 14px; margin: 0; }
-        .refresh-btn { background: #3d85c6; color: white; border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; white-space: nowrap; margin-left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
-        .refresh-btn:active { background: #296296; }
-        
-        .room-card { border-radius: 10px; padding: 12px 15px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 5px solid; transition: all 0.3s; }
-        .room-card.status-default { background: #b0b5b9; border-left-color: #6b7280; }
-        .room-card.status-standby { background: #e2e8f0; border-left-color: #666; }
-        .room-card.status-inspected { background: #e0f2fe; border-left-color: #0ea5e9; }
-        .room-card.status-departed { background: #fff7ed; border-left-color: #f97316; }
-        .room-card.status-final { background: #f0fdf4; border-left-color: #22c55e; }
-        
-        /* ▼ 新レイアウト・アコーディオン関連 ▼ */
-        .room-header { cursor: pointer; user-select: none; display: flex; flex-direction: column; gap: 6px; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .header-info { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .room-no { font-size: 1.35rem; font-weight: bold; color: #2c3e50; white-space: nowrap; }
-        .venue-badge { background: #fbbf24; color: #78350f; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; border: 1px solid #f59e0b; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .room-user { font-size: 0.85rem; background: rgba(255,255,255,0.6); border: 1px solid #ccc; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-        .early-badge { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        
-        .header-check-label { border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; white-space: nowrap; background: #fff; margin-left: auto; }
-        .header-check-label input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-        
-        .header-middle { display: flex; align-items: flex-end; justify-content: space-between; margin: 2px 0; }
-        .guest-name-area { display: flex; flex-direction: column; line-height: 1.2; }
-        .guest-furigana { font-size: 0.7rem; color: #64748b; min-height: 12px; }
-        .guest-name { font-size: 1.15rem; font-weight: bold; color: #1e293b; }
-        .guest-count { font-size: 1rem; font-weight: bold; color: #334155; }
-        
-        .header-bottom { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; position: relative; }
-        .status-badge { padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.6); white-space: nowrap; border: 1px solid #cbd5e0; }
-        .status-badge.active { background: #ef4444; color: white; border-color: #dc2626; }
-        .memo-inline { display: flex; align-items: center; gap: 6px; flex: 1; overflow: hidden; }
-        .memo-label { font-weight: bold; font-size: 0.75rem; color: #444; white-space: nowrap; background: rgba(255,255,255,0.5); padding: 1px 4px; border-radius: 3px; }
-        .memo-text { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .toggle-icon { font-size: 0.75rem; color: #718096; transition: transform 0.2s; position: absolute; right: 0; }
-        .room-card.is-open .toggle-icon { transform: rotate(180deg); }
-        
-        .room-detail { display: none; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 12px; margin-top: 8px; }
-        .room-card.is-open .room-detail { display: block; }
-        /* ▲ ここまで ▲ */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CheckNest 客室点検アプリ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-        .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .input-label { background: rgba(241, 245, 249, 0.7); padding: 10px 8px; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid #e2e8f0; }
-        .input-label input { width: 18px; height: 18px; margin: 0; }
-        
-        .bottom-controls { display: flex; gap: 10px; border-top: 2px solid rgba(0,0,0,0.1); padding-top: 12px; }
-        .bottom-select-group { display: flex; align-items: center; gap: 6px; }
-        .group-summary { flex: 55; }
-        .group-checker { flex: 45; }
-        .bottom-select-group label { font-size: 0.8rem; color: #444; white-space: nowrap; font-weight: bold; }
-        .bottom-select-group select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e0; font-size: 0.9rem; background-color: rgba(255,255,255,0.9); }
+    body {
+      margin: 0;
+      padding: 10px;
+      color: #243242;
+      background: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-        .loading { text-align: center; padding: 40px; color: #666; font-weight: bold; }
-        .version-info { text-align: center; font-size: 10px; color: #999; margin-top: 10px; margin-bottom: 60px; }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
 
-        /* ▼ 新マップセル（縦長・3段表示） ▼ */
-        .map-cell { aspect-ratio: 1 / 1.35; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #a0aec0; border-radius: 5px; background-color: #fff; color: #333; transition: all 0.2s; padding: 2px 1px; box-sizing: border-box; overflow: hidden; line-height: 1.15; }
-        .map-cell.empty { background-color: transparent; border: none; }
-        .map-cell-no { font-size: 0.9rem; font-weight: bold; }
-        .map-cell-name { font-size: 0.65rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; margin-top: 1px; }
-        .map-cell-count { font-size: 0.6rem; opacity: 0.9; margin-top: 1px; }
-    </style>
+    #app-container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .filter-container {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 4px;
+      margin-bottom: 15px;
+      overflow-x: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px #0002;
+    }
+
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 8px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .filter-label input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+    }
+
+    .refresh-btn {
+      padding: 5px 12px;
+      color: #fff;
+      background: #3d85c6;
+      border: 0;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .room-card {
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 5px solid;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px #0002;
+      transition: opacity 0.2s, background-color 0.3s, border-color 0.3s;
+    }
+
+    .room-card.is-saving {
+      pointer-events: none;
+      opacity: 0.55;
+    }
+
+    .status-default {
+      background: #b0b5b9;
+      border-left-color: #6b7280;
+    }
+
+    .status-standby {
+      background: #e2e8f0;
+      border-left-color: #666;
+    }
+
+    .status-inspected {
+      background: #e0f2fe;
+      border-left-color: #0ea5e9;
+    }
+
+    .status-departed {
+      background: #fff7ed;
+      border-left-color: #f97316;
+    }
+
+    .status-final {
+      background: #f0fdf4;
+      border-left-color: #22c55e;
+    }
+
+    .room-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 8px;
+      margin-bottom: 7px;
+      border-bottom: 1px solid #0002;
+    }
+
+    .header-info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .room-no {
+      color: #24364a;
+      font-size: 1.3rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .venue {
+      color: #111827;
+      font-size: 1.15rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .room-user {
+      padding: 2px 6px;
+      background: #ffffffb3;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .early-badge {
+      padding: 3px 8px;
+      color: #fff;
+      background: #ef4444;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .header-check-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .header-check-label input,
+    .input-label input {
+      width: 19px;
+      height: 19px;
+      margin: 0;
+    }
+
+    .guest-block {
+      min-height: 42px;
+      margin: 2px 0 9px;
+    }
+
+    .guest-main {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 18px;
+    }
+
+    .guest-name {
+      font-size: 1.05rem;
+    }
+
+    .guest-count {
+      font-weight: 600;
+    }
+
+    .guest-furigana {
+      margin-top: 2px;
+      color: #374151;
+      font-size: 0.7rem;
+    }
+
+    .view-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 0.85rem;
+    }
+
+    .status-badge {
+      padding: 3px 6px;
+      background: #ffffffa6;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-badge.active {
+      color: #fff;
+      background: #ef4444;
+    }
+
+    .memo-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .memo-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .memo-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .accordion-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 2px 6px;
+      color: #374151;
+      background: transparent;
+      border: 0;
+      border-top: 1px solid #0003;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .accordion-toggle::after {
+      content: "▼";
+      font-size: 0.72rem;
+      transition: transform 0.2s;
+    }
+
+    .accordion-toggle[aria-expanded="true"]::after {
+      transform: rotate(180deg);
+    }
+
+    .accordion-panel {
+      display: none;
+      padding-top: 4px;
+    }
+
+    .accordion-panel.is-open {
+      display: block;
+    }
+
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 8px;
+      background: #f1f5f9bf;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .bottom-controls {
+      display: flex;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 2px solid #0003;
+    }
+
+    .bottom-select-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .group-summary {
+      flex: 55;
+    }
+
+    .group-checker {
+      flex: 45;
+    }
+
+    .bottom-select-group label {
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .bottom-select-group select {
+      width: 100%;
+      min-width: 0;
+      padding: 7px 8px;
+      background: #fffffff2;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+
+    .loading {
+      padding: 40px;
+      color: #666;
+      text-align: center;
+    }
+
+    .version-info {
+      margin-top: 10px;
+      color: #999;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .map-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-height: 88px;
+      padding: 4px 2px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #a0aec0;
+      border-radius: 4px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .map-cell.empty {
+      background: transparent;
+      border: 0;
+    }
+
+    .map-room-no {
+      font-size: 0.95rem;
+    }
+
+    .map-guest {
+      width: 100%;
+      overflow: hidden;
+      font-size: 0.72rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .map-count {
+      font-size: 0.68rem;
+      font-weight: normal;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border: 1px solid;
+      border-radius: 3px;
+    }
+
+    .legend-final {
+      background: #22c55e;
+      border-color: #16a34a;
+    }
+
+    .legend-departed {
+      background: #f97316;
+      border-color: #ea580c;
+    }
+
+    .legend-inspected {
+      background: #3d85c6;
+      border-color: #296296;
+    }
+
+    .legend-standby {
+      background: #e2e8f0;
+      border-color: #cbd5e0;
+    }
+
+    .legend-default {
+      background: #666;
+      border-color: #555;
+    }
+
+    @media (max-width: 430px) {
+      body {
+        padding: 6px;
+      }
+
+      .room-card {
+        padding: 12px;
+      }
+
+      .header-info {
+        gap: 6px;
+      }
+
+      .room-no {
+        font-size: 1.15rem;
+      }
+
+      .venue {
+        font-size: 1rem;
+      }
+
+      .room-user {
+        order: 3;
+      }
+
+      .header-check-label {
+        padding: 8px 10px;
+      }
+
+      .bottom-controls {
+        flex-direction: column;
+      }
+
+      .map-cell {
+        min-height: 74px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div id="app-container">
-        <div class="filter-container">
-            <label class="filter-label"><input type="checkbox" value="1" checked onchange="saveFilters(); renderAll()"> 1</label>
-            <label class="filter-label"><input type="checkbox" value="2" checked onchange="saveFilters(); renderAll()"> 2</label>
-            <label class="filter-label"><input type="checkbox" value="3" checked onchange="saveFilters(); renderAll()"> 3</label>
-            <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
-            <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
-            <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
-            <button class="refresh-btn" onclick="loadData(true)">↻</button>
-        </div>
-        <div id="room-list-container"><div class="loading">客室データを読み込み中...</div></div>
-        <div class="version-info">Ver.14.0（アコーディオンUI＆接客ツール化）</div>
+  <div id="app-container">
+    <div class="filter-container">
+      <label class="filter-label"><input type="checkbox" value="1" checked onchange="saveFilters(); renderAll()"> 1</label>
+      <label class="filter-label"><input type="checkbox" value="2" checked onchange="saveFilters(); renderAll()"> 2</label>
+      <label class="filter-label"><input type="checkbox" value="3" checked onchange="saveFilters(); renderAll()"> 3</label>
+      <label class="filter-label"><input type="checkbox" value="4" checked onchange="saveFilters(); renderAll()"> 4</label>
+      <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
+      <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
+      <button class="refresh-btn" type="button" onclick="loadData(true)" aria-label="更新">&#8635;</button>
     </div>
+    <div id="room-list-container">
+      <div class="loading">客室データを読み込み中...</div>
+    </div>
+    <div class="version-info">CheckNest Ver.14.1</div>
+  </div>
 
-    <button id="btn-map-toggle" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background-color:#4a5568; color:#fff; border-radius:50px; border:none; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3);">全館状況</button>
-    <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f7fafc; z-index:9999; flex-direction:column;">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-        <div>
-          <h2 style="margin:0; font-size:1.1rem; color:#2d3748;">全館状況</h2>
-          <span id="map-timestamp" style="font-size:0.8rem; color:#718096;">--:-- 時点</span>
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button id="btn-map-refresh" style="padding:8px 12px; border:1px solid #cbd5e0; background:#edf2f7; color:#4a5568; font-weight:bold; border-radius:4px;">↻ 更新</button>
-          <button id="btn-map-close" style="padding:8px 12px; background:#e53e3e; color:#fff; border:none; font-weight:bold; border-radius:4px;">✕ 閉じる</button>
-        </div>
+  <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
+    全館状況
+  </button>
+
+  <div id="map-modal" style="display:none; position:fixed; inset:0; background:#f7fafc; z-index:9999; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0;">
+      <div>
+        <h2 style="margin:0; font-size:1.1rem;">全館状況</h2>
+        <span id="map-timestamp" style="font-size:0.8rem; color:#718096;">--:-- 時点</span>
       </div>
-
-      <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; background: #f7fafc;">
-        <div style="width: 100%; max-width: 600px; padding-bottom: 40px;">
-          
-          <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px;"></div>
-
-          <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 0 16px; margin-top: 10px; font-size: 0.85rem; color: #4a5568; justify-content: center;">
-            <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #22c55e; border: 1px solid #16a34a; border-radius: 3px;"></span>最終完了</div>
-            <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #f97316; border: 1px solid #ea580c; border-radius: 3px;"></span>出発済</div>
-            <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #3d85c6; border: 1px solid #296296; border-radius: 3px;"></span>点検済</div>
-            <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border: 1px solid #cbd5e0; border-radius: 3px;"></span>準備中</div>
-            <div style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 14px; height: 14px; background: #666666; border: 1px solid #555555; border-radius: 3px;"></span>未使用</div>
-          </div>
-        </div>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-map-refresh" type="button" style="padding:8px 12px; border:1px solid #cbd5e0; background:#edf2f7; border-radius:4px;">&#8635; 更新</button>
+        <button id="btn-map-close" type="button" style="padding:8px 12px; background:#e53e3e; color:#fff; border:0; border-radius:4px;">閉じる</button>
       </div>
     </div>
+    <div style="flex:1; overflow-y:auto; display:flex; justify-content:center;">
+      <div style="width:100%; max-width:600px; padding-bottom:40px;">
+        <div id="map-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; padding:16px;"></div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; padding:0 16px; margin-top:20px; font-size:0.85rem; justify-content:center;">
+          <div class="legend-item"><span class="legend-color legend-final"></span>最終完了</div>
+          <div class="legend-item"><span class="legend-color legend-departed"></span>出発済</div>
+          <div class="legend-item"><span class="legend-color legend-inspected"></span>点検済</div>
+          <div class="legend-item"><span class="legend-color legend-standby"></span>準備中</div>
+          <div class="legend-item"><span class="legend-color legend-default"></span>未使用</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyqqrs0pMujg9DFLkxKeJzAk7lDs-RMfxMmjuLqRRBB3PLvL_1s0NFHKhPpocvAkdrH/exec';
-        const POLLING_INTERVAL = 10000; 
+  <script>
+    const GAS_URL =
+      'https://script.google.com/macros/s/AKfycbwgwaw1tuo4FMm_3Wd98_B5Z-gaUMQYHArWBMuWaOyex4rXDjALH4nXr0B1UaX192ry/exec';
+    const POLLING_INTERVAL = 10000;
+    const POST_TIMEOUT_MS = 8000;
+    const FILTER_STORAGE_KEY = 'selectedFloors';
+    const ACCORDION_STORAGE_KEY = 'checkNestOpenRooms';
 
-        let allRoomsData = []; 
-        let summaryList = []; 
-        let masterStaffList = []; 
-        let isMasterLoaded = false; 
+    let allRoomsData = [];
+    let summaryList = [];
+    let masterStaffList = [];
+    let isMasterLoaded = false;
+    let currentDataVersion = '';
+    let lastSuccessfulFetchAt = null;
+    let pauseRefreshUntil = 0;
+    let isFetching = false;
+    let refreshTimer = null;
 
-        let pauseRefreshUntil = 0; 
-        let isFetching = false;
-        let refreshTimer = null; 
-        
-        // ローカルストレージ（アコーディオンの開閉状態）
-        let openRoomIds = new Set();
-        try {
-            const savedState = localStorage.getItem('openRoomsState');
-            if (savedState) openRoomIds = new Set(JSON.parse(savedState));
-        } catch(e) { console.error('開閉状態の読み込みエラー', e); }
-        
-        const mapLayout = [
-          [601, 602, 603, null, 605, null, null],
-          [501, 502, 503, null, 505, null, null],
-          [401, 402, 403, 404, 405, 406, null],
-          [301, 302, 303, 304, 305, 306, 307 ],
-          [201, 202, 203, null, 205, 207, 208 ],
-          [101, 102, 103, null, 105, 107, 108 ]
-        ];
+    const mapLayout = [
+      [601, 602, 603, null, 605, null, null],
+      [501, 502, 503, null, 505, null, null],
+      [401, 402, 403, 404, 405, 406, null],
+      [301, 302, 303, 304, 305, 306, 307],
+      [201, 202, 203, null, 205, 207, 208],
+      [101, 102, 103, null, 105, 107, 108]
+    ];
 
-        document.addEventListener('DOMContentLoaded', () => { 
-            const savedFilters = localStorage.getItem('selectedFloors');
-            if (savedFilters) {
-                try {
-                    const floors = JSON.parse(savedFilters);
-                    document.querySelectorAll('.filter-container input').forEach(cb => {
-                        cb.checked = floors.includes(cb.value);
-                    });
-                } catch(e) { console.error('保存されたフィルターの読み込みに失敗しました', e); }
-            }
-            initMapGrid();
-            loadData(); 
-        });
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
-        function saveFilters() {
-            const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-            localStorage.setItem('selectedFloors', JSON.stringify(checkedFloors));
-        }
-        
-        function toggleRoom(roomNo) {
-            if (openRoomIds.has(roomNo)) {
-                openRoomIds.delete(roomNo);
-            } else {
-                openRoomIds.add(roomNo);
-            }
-            localStorage.setItem('openRoomsState', JSON.stringify(Array.from(openRoomIds)));
-            renderAll();
-        }
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, '&#096;');
+    }
 
-        document.addEventListener('click', (e) => {
-            const active = document.activeElement;
-            if (active && (active.tagName === 'SELECT' || active.tagName === 'INPUT')) {
-                if (e.target !== active) {
-                    active.blur();
-                }
-            }
-        });
+    function isTrue(value) {
+      return value === true || String(value).toLowerCase() === 'true';
+    }
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                pauseRefreshUntil = 0;
-                const isMapOpen = document.getElementById('map-modal').style.display === 'flex';
-                if (!isFetching && !isMapOpen) {
-                    clearTimeout(refreshTimer);
-                    loadData(true);
-                }
-            }
-        });
+    function isBlankChoice(value) {
+      return (
+        value === '' ||
+        value === '－－' ||
+        value === 'ーー' ||
+        value === '--'
+      );
+    }
 
-        function initMapGrid() {
-          const gridContainer = document.getElementById('map-grid');
-          gridContainer.innerHTML = ''; 
-          mapLayout.forEach(row => {
-            row.forEach(roomNum => {
-              const cell = document.createElement('div');
-              if (roomNum === null) {
-                cell.className = 'map-cell empty';
-              } else {
-                cell.className = 'map-cell';
-                cell.id = `map-room-${roomNum}`;
-                cell.innerHTML = `<span class="map-cell-no">${roomNum}</span>`;
-              }
-              gridContainer.appendChild(cell);
+    function getOpenRoomRows() {
+      try {
+        const savedValue = JSON.parse(
+          localStorage.getItem(ACCORDION_STORAGE_KEY) || '[]'
+        );
+        return new Set(
+          Array.isArray(savedValue) ? savedValue.map(String) : []
+        );
+      } catch (error) {
+        console.error('アコーディオン状態を読み込めませんでした', error);
+        return new Set();
+      }
+    }
+
+    function saveOpenRoomRows(openRoomRows) {
+      try {
+        localStorage.setItem(
+          ACCORDION_STORAGE_KEY,
+          JSON.stringify([...openRoomRows])
+        );
+      } catch (error) {
+        console.error('アコーディオン状態を保存できませんでした', error);
+      }
+    }
+
+    function toggleAccordion(button, roomRowNumber) {
+      const panel = button.nextElementSibling;
+      if (!panel) {
+        return;
+      }
+
+      const willOpen = !panel.classList.contains('is-open');
+      panel.classList.toggle('is-open', willOpen);
+      button.setAttribute('aria-expanded', String(willOpen));
+
+      const openRoomRows = getOpenRoomRows();
+      const roomKey = String(roomRowNumber);
+
+      if (willOpen) {
+        openRoomRows.add(roomKey);
+      } else {
+        openRoomRows.delete(roomKey);
+      }
+
+      saveOpenRoomRows(openRoomRows);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const savedFloors = JSON.parse(
+          localStorage.getItem(FILTER_STORAGE_KEY) || 'null'
+        );
+
+        if (Array.isArray(savedFloors)) {
+          document
+            .querySelectorAll('.filter-container input')
+            .forEach((checkbox) => {
+              checkbox.checked = savedFloors.includes(checkbox.value);
             });
-          });
+        }
+      } catch (error) {
+        console.error('フロア選択を読み込めませんでした', error);
+      }
+
+      initMapGrid();
+      loadData();
+    });
+
+    function saveFilters() {
+      const selectedFloors = [
+        ...document.querySelectorAll('.filter-container input:checked')
+      ].map((checkbox) => checkbox.value);
+
+      try {
+        localStorage.setItem(
+          FILTER_STORAGE_KEY,
+          JSON.stringify(selectedFloors)
+        );
+      } catch (error) {
+        console.error('フロア選択を保存できませんでした', error);
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      const activeElement = document.activeElement;
+      const isFormControl =
+        activeElement &&
+        (activeElement.tagName === 'SELECT' ||
+          activeElement.tagName === 'INPUT');
+
+      if (isFormControl && event.target !== activeElement) {
+        activeElement.blur();
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      pauseRefreshUntil = 0;
+      const isMapOpen =
+        document.getElementById('map-modal').style.display === 'flex';
+
+      if (!isFetching && !isMapOpen) {
+        clearTimeout(refreshTimer);
+        loadData(true);
+      }
+    });
+
+    function initMapGrid() {
+      const gridContainer = document.getElementById('map-grid');
+      gridContainer.replaceChildren();
+
+      mapLayout.flat().forEach((roomNumber) => {
+        const cell = document.createElement('div');
+
+        if (roomNumber === null) {
+          cell.className = 'map-cell empty';
+          gridContainer.appendChild(cell);
+          return;
         }
 
-        async function loadData(force = false) {
-            const scheduleNext = () => {
-                clearTimeout(refreshTimer);
-                refreshTimer = setTimeout(loadData, POLLING_INTERVAL);
-            };
+        cell.className = 'map-cell';
+        cell.id = 'map-room-' + roomNumber;
 
-            const isMapOpen = document.getElementById('map-modal').style.display === 'flex';
-            const isHidden = document.hidden;
+        const roomNumberElement = document.createElement('div');
+        roomNumberElement.className = 'map-room-no';
+        roomNumberElement.textContent = roomNumber;
 
-            if (!force && (isFetching || Date.now() < pauseRefreshUntil || isMapOpen || isHidden)) {
-                scheduleNext();
-                return; 
-            }
+        const guestNameElement = document.createElement('div');
+        guestNameElement.className = 'map-guest';
 
-            const active = document.activeElement;
-            if (!force && active && (active.tagName === 'SELECT' || (active.tagName === 'INPUT' && active.type !== 'checkbox'))) {
-                scheduleNext(); 
-                return; 
-            }
-            
-            if (isFetching) return;
-            isFetching = true;
+        const guestCountElement = document.createElement('div');
+        guestCountElement.className = 'map-count';
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+        cell.append(
+          roomNumberElement,
+          guestNameElement,
+          guestCountElement
+        );
+        gridContainer.appendChild(cell);
+      });
+    }
 
-            try {
-                const initParam = !isMasterLoaded ? '&init=true' : '';
-                const noCacheUrl = GAS_URL + '?t=' + new Date().getTime() + initParam;
-                
-                const response = await fetch(noCacheUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await response.json();
+    function extractVersion(responseData) {
+      if (!responseData || Array.isArray(responseData)) {
+        return '';
+      }
 
-                if (Date.now() < pauseRefreshUntil) {
-                    isFetching = false;
-                    scheduleNext();
-                    return;
-                }
+      return (
+        responseData.dataVersion ??
+        responseData.version ??
+        responseData.currentDataVersion ??
+        responseData.data_version ??
+        ''
+      );
+    }
 
-                if (data.summaryList) summaryList = data.summaryList;
-                if (data.staffList) masterStaffList = data.staffList;
-                isMasterLoaded = true; 
+    async function loadData(force = false) {
+      const scheduleNextLoad = () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(loadData, POLLING_INTERVAL);
+      };
 
-                if (data && data.rooms) {
-                    allRoomsData = data.rooms;
-                } else if (Array.isArray(data)) {
-                    allRoomsData = data;
-                }
+      const isMapOpen =
+        document.getElementById('map-modal').style.display === 'flex';
 
-                if (allRoomsData.length > 0) {
-                    renderAll(); 
-                    if (isMapOpen) renderMapColors(allRoomsData);
-                }
-            } catch (e) {
-                console.error(e);
-                const isTimeout = e.name === 'AbortError';
-                const errMsg = isTimeout ? '通信がタイムアウトしました' : e.message;
-                document.getElementById('room-list-container').innerHTML =
-                    `<div class="loading" style="color:#c0392b">読込エラー: ${errMsg}<br>↻ボタンで再試行してください</div>`;
-            } finally {
-                isFetching = false; 
-                scheduleNext(); 
-            }
+      if (
+        !force &&
+        (isFetching ||
+          Date.now() < pauseRefreshUntil ||
+          isMapOpen ||
+          document.hidden)
+      ) {
+        scheduleNextLoad();
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      const isEditing =
+        activeElement &&
+        (activeElement.tagName === 'SELECT' ||
+          (activeElement.tagName === 'INPUT' &&
+            activeElement.type !== 'checkbox'));
+
+      if (!force && isEditing) {
+        scheduleNextLoad();
+        return;
+      }
+
+      if (isFetching) {
+        return;
+      }
+
+      isFetching = true;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const initParameter = !isMasterLoaded ? '&init=true' : '';
+        const requestUrl =
+          GAS_URL + '?t=' + Date.now() + initParameter;
+        const response = await fetch(requestUrl, {
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
         }
 
-        async function fetchAndRenderMap() {
-            const timestampEl = document.getElementById('map-timestamp');
-            if (timestampEl) timestampEl.textContent = '取得中...';
-            
-            if (Date.now() < pauseRefreshUntil) {
-                renderMapColors(allRoomsData);
-                return;
-            }
-            await loadData(true);
+        const responseData = await response.json();
+
+        if (Date.now() < pauseRefreshUntil) {
+          return;
         }
 
-        function renderMapColors(rooms) {
-          if (!rooms || rooms.length === 0) return;
-          const now = new Date();
-          const timestampEl = document.getElementById('map-timestamp');
-          if (timestampEl) {
-              timestampEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 更新`;
+        if (Array.isArray(responseData?.summaryList)) {
+          summaryList = responseData.summaryList;
+        }
+
+        if (Array.isArray(responseData?.staffList)) {
+          masterStaffList = responseData.staffList;
+        }
+
+        if (
+          Array.isArray(responseData?.summaryList) &&
+          Array.isArray(responseData?.staffList)
+        ) {
+          isMasterLoaded = true;
+        }
+
+        const receivedRooms = Array.isArray(responseData?.rooms)
+          ? responseData.rooms
+          : Array.isArray(responseData)
+            ? responseData
+            : null;
+
+        if (!receivedRooms) {
+          throw new Error('客室データの形式が正しくありません');
+        }
+
+        allRoomsData = receivedRooms;
+        const receivedVersion = extractVersion(responseData);
+
+        if (receivedVersion !== '') {
+          currentDataVersion = receivedVersion;
+        }
+
+        lastSuccessfulFetchAt = new Date();
+        renderAll();
+
+        if (isMapOpen) {
+          renderMapColors(allRoomsData);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!allRoomsData.length) {
+          const errorMessage =
+            error.name === 'AbortError'
+              ? '通信がタイムアウトしました'
+              : error.message;
+
+          document.getElementById('room-list-container').innerHTML =
+            '<div class="loading" style="color:#c0392b">' +
+            '読込エラー: ' +
+            escapeHtml(errorMessage) +
+            '<br>更新ボタンで再試行してください</div>';
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        isFetching = false;
+        scheduleNextLoad();
+      }
+    }
+
+    async function fetchAndRenderMap() {
+      const timestampElement = document.getElementById('map-timestamp');
+
+      if (timestampElement) {
+        timestampElement.textContent = '取得中...';
+      }
+
+      if (Date.now() < pauseRefreshUntil) {
+        renderMapColors(allRoomsData);
+        return;
+      }
+
+      await loadData(true);
+      renderMapColors(allRoomsData);
+    }
+
+    function renderMapColors(rooms) {
+      if (!Array.isArray(rooms)) {
+        return;
+      }
+
+      const timestampElement = document.getElementById('map-timestamp');
+
+      if (timestampElement && lastSuccessfulFetchAt) {
+        timestampElement.textContent =
+          String(lastSuccessfulFetchAt.getHours()).padStart(2, '0') +
+          ':' +
+          String(lastSuccessfulFetchAt.getMinutes()).padStart(2, '0') +
+          ' 取得';
+      }
+
+      const statusStyles = {
+        'status-final': {
+          background: '#22c55e',
+          text: '#fff',
+          border: '#16a34a'
+        },
+        'status-departed': {
+          background: '#f97316',
+          text: '#fff',
+          border: '#ea580c'
+        },
+        'status-inspected': {
+          background: '#3d85c6',
+          text: '#fff',
+          border: '#296296'
+        },
+        'status-standby': {
+          background: '#e2e8f0',
+          text: '#2d3748',
+          border: '#cbd5e0'
+        },
+        'status-default': {
+          background: '#666',
+          text: '#fff',
+          border: '#555'
+        }
+      };
+
+      rooms.forEach((room) => {
+        const roomCell = document.getElementById(
+          'map-room-' + String(room.A)
+        );
+
+        if (!roomCell) {
+          return;
+        }
+
+        const statusClass = getRoomStatusClass(room);
+        const style =
+          statusStyles[statusClass] || statusStyles['status-default'];
+        roomCell.style.backgroundColor = style.background;
+        roomCell.style.color = style.text;
+        roomCell.style.borderColor = style.border;
+
+        const guestNameElement = roomCell.querySelector('.map-guest');
+        const guestCountElement = roomCell.querySelector('.map-count');
+
+        if (guestNameElement) {
+          guestNameElement.textContent = room.M || '';
+        }
+
+        if (guestCountElement) {
+          guestCountElement.textContent = room.N || '';
+        }
+      });
+    }
+
+    function getFloorNumber(roomName) {
+      const floorMatch = String(roomName).match(/^[1-6]/);
+      return floorMatch ? floorMatch[0] : null;
+    }
+
+    function getRoomStatusClass(room) {
+      const staffName = String(room.B || '').trim();
+      const summary = String(room.H || '').trim();
+      const checkerName = String(room.J || '').trim();
+      const isDeparted = isTrue(room.K);
+      const isCompleted = isTrue(room.L);
+      const isCheckedByPerson =
+        !isBlankChoice(checkerName) && checkerName !== '着';
+      const isStandby =
+        !isBlankChoice(staffName) || !isBlankChoice(summary);
+
+      if (
+        isStandby &&
+        isCheckedByPerson &&
+        isDeparted &&
+        isCompleted
+      ) {
+        return 'status-final';
+      }
+
+      if (isDeparted && isCompleted) {
+        return 'status-departed';
+      }
+
+      if (isCompleted) {
+        return 'status-inspected';
+      }
+
+      if (isStandby) {
+        return 'status-standby';
+      }
+
+      return 'status-default';
+    }
+
+    function buildOptions(items, currentValue, emptyLabel) {
+      const optionItems = Array.isArray(items) ? items : [];
+      let isCurrentValueFound = false;
+      let optionsHtml =
+        '<option value="">' + escapeHtml(emptyLabel) + '</option>';
+
+      optionItems.forEach((item) => {
+        const optionValue = String(item ?? '');
+        const isSelected = currentValue === optionValue;
+
+        if (isSelected) {
+          isCurrentValueFound = true;
+        }
+
+        optionsHtml +=
+          '<option value="' +
+          escapeAttribute(optionValue) +
+          '"' +
+          (isSelected ? ' selected' : '') +
+          '>' +
+          escapeHtml(optionValue) +
+          '</option>';
+      });
+
+      if (!isCurrentValueFound && currentValue !== '') {
+        optionsHtml +=
+          '<option value="' +
+          escapeAttribute(currentValue) +
+          '" selected>' +
+          escapeHtml(currentValue) +
+          '</option>';
+      }
+
+      return optionsHtml;
+    }
+
+    function renderAll() {
+      try {
+        if (!allRoomsData.length) {
+          return;
+        }
+
+        const selectedFloors = [
+          ...document.querySelectorAll(
+            '.filter-container input:checked'
+          )
+        ].map((checkbox) => checkbox.value);
+        const openRoomRows = getOpenRoomRows();
+        const roomListContainer =
+          document.getElementById('room-list-container');
+        const roomFragment = document.createDocumentFragment();
+
+        allRoomsData.forEach((room) => {
+          const floorNumber = getFloorNumber(room.A);
+
+          if (
+            floorNumber !== null &&
+            !selectedFloors.includes(floorNumber)
+          ) {
+            return;
           }
 
-          const mapStyles = {
-            'status-final':     { bg: '#22c55e', text: '#ffffff', border: '#16a34a' }, 
-            'status-departed':  { bg: '#f97316', text: '#ffffff', border: '#ea580c' }, 
-            'status-inspected': { bg: '#3d85c6', text: '#ffffff', border: '#296296' }, 
-            'status-standby':   { bg: '#e2e8f0', text: '#2d3748', border: '#cbd5e0' }, 
-            'status-default':   { bg: '#ffffff', text: '#333333', border: '#cbd5e0' }  
-          };
+          const rowNumber = Number(room.rowNumber);
 
-          rooms.forEach(room => {
-            const roomNum = String(room.A); 
-            const cell = document.getElementById(`map-room-${roomNum}`);
-            if (cell) {
-              const currentStatus = getRoomStatusClass(room);
-              const style = mapStyles[currentStatus] || mapStyles['status-default'];
-              
-              cell.style.backgroundColor = style.bg;
-              cell.style.color = style.text;
-              cell.style.borderColor = style.border;
-              
-              // M列(名前), N列(人数)を追加描画
-              const name = (room.M && room.M !== '－－') ? String(room.M).trim() : '';
-              const count = (room.N && room.N !== '－－') ? String(room.N).trim() : '';
-              
-              let content = `<span class="map-cell-no">${roomNum}</span>`;
-              if (name) content += `<span class="map-cell-name">${name}</span>`;
-              if (count) content += `<span class="map-cell-count">${count}</span>`;
-              
-              cell.innerHTML = content;
-            }
-          });
-        }
+          if (!Number.isInteger(rowNumber)) {
+            return;
+          }
 
-        function getFloorNumber(roomName) {
-            const str = String(roomName);
-            const match = str.match(/^[1-6]/);
-            return match ? match[0] : null;
-        }
+          const roomNumber = String(room.A ?? '');
+          const isEarly = isTrue(room.C);
+          const isDeparted = isTrue(room.K);
+          const isCompleted = isTrue(room.L);
+          const isAccordionOpen =
+            openRoomRows.has(String(rowNumber));
+          const currentChecker = String(room.J || '').trim();
+          const currentSummary = String(room.H || '').trim();
 
-        function getRoomStatusClass(room) {
-            const valB = room.B ? String(room.B).trim() : "";
-            const valH = room.H ? String(room.H).trim() : "";
-            const valJ = room.J ? String(room.J).trim() : "";
-            const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-            const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
+          const checkerOptions = buildOptions(
+            masterStaffList,
+            currentChecker,
+            '-未選択-'
+          );
+          const summaryOptions = buildOptions(
+            summaryList,
+            currentSummary,
+            '- なし -'
+          );
 
-            const isB_Empty = (valB === "" || valB === "－－" || valB === "ーー" || valB === "--");
-            const isH_Empty = (valH === "" || valH === "－－" || valH === "ーー" || valH === "--");
-            const isPersonChecked = (valJ !== "" && valJ !== "－－" && valJ !== "ーー" && valJ !== "--" && valJ !== "着");
-            const cond1 = (!isB_Empty || !isH_Empty); 
+          const roomCard = document.createElement('article');
+          roomCard.className =
+            'room-card ' + getRoomStatusClass(room);
+          roomCard.dataset.row = String(rowNumber);
 
-            if (cond1 && isPersonChecked && isDeparted && isCompleted) return 'status-final';      
-            else if (isDeparted && isCompleted) return 'status-departed';  
-            else if (isCompleted) return 'status-inspected'; 
-            else if (cond1) return 'status-standby';   
-            else return 'status-default';   
-        }
+          roomCard.innerHTML = `
+            <div class="room-header">
+              <div class="header-info">
+                <div class="room-no">${escapeHtml(roomNumber)}号室</div>
+                <div class="venue">${escapeHtml(room.O || '')}</div>
+                <div class="room-user">担当: ${escapeHtml(room.B || '未定')}</div>
+                ${isEarly ? '<span class="early-badge">E</span>' : ''}
+              </div>
+              <label class="header-check-label">
+                <input
+                  type="checkbox"
+                  onchange="updateValue(this, ${rowNumber}, 12)"
+                  ${isCompleted ? 'checked' : ''}
+                >
+                点検
+              </label>
+            </div>
 
-        function renderAll() {
-            try {
-                if (allRoomsData.length === 0) return;
-                const checkedFloors = Array.from(document.querySelectorAll('.filter-container input:checked')).map(cb => cb.value);
-                const container = document.getElementById('room-list-container'); 
-                const fragment = document.createDocumentFragment();
-                
-                allRoomsData.forEach(room => {
-                    const floor = getFloorNumber(room.A);
-                    if (floor !== null && !checkedFloors.includes(floor)) return;
-                    
-                    const isEarly = (room.C === true || String(room.C).toLowerCase() === 'true');
-                    const isDeparted = (room.K === true || String(room.K).toLowerCase() === 'true');
-                    const isCompleted = (room.L === true || String(room.L).toLowerCase() === 'true');
-                    
-                    const guestName = room.M || '';
-                    const guestCount = room.N || '';
-                    const venue = room.O || '';
-                    const furigana = room.P || '';
-                    const nameSuffix = guestName ? ' 様' : '';
-                    const isOpen = openRoomIds.has(String(room.A));
-                    
-                    let jOptions = `<option value="">-未選択-</option>`;
-                    let currentJ = String(room.J || "").trim();
-                    let jFound = false;
-                    masterStaffList.forEach(n => {
-                        const selected = (currentJ === n) ? 'selected' : '';
-                        if(selected) jFound = true;
-                        jOptions += `<option value="${n}" ${selected}>${n}</option>`;
-                    });
-                    if(!jFound && currentJ !== "") jOptions += `<option value="${currentJ}" selected>${currentJ}</option>`;
+            <div class="guest-block">
+              <div class="guest-main">
+                <span class="guest-name">
+                  ${room.M ? escapeHtml(room.M) + '　様' : ''}
+                </span>
+                <span class="guest-count">${escapeHtml(room.N || '')}</span>
+              </div>
+              <div class="guest-furigana">${escapeHtml(room.P || '')}</div>
+            </div>
 
-                    let hOptions = `<option value="">- なし -</option>`;
-                    let currentH = String(room.H || "").trim();
-                    let hFound = false;
-                    summaryList.forEach(h => {
-                        const selected = (currentH === h) ? 'selected' : '';
-                        if(selected) hFound = true;
-                        hOptions += `<option value="${h}" ${selected}>${h}</option>`;
-                    });
-                    if(!hFound && currentH !== "") hOptions += `<option value="${currentH}" selected>${currentH}</option>`;
+            <div class="view-row">
+              <span class="status-badge ${isDeparted ? 'active' : ''}">
+                ${isDeparted ? '出発済' : '未出発'}
+              </span>
+              <div class="memo-inline">
+                <span class="memo-label">備考</span>
+                <span
+                  class="memo-text"
+                  title="${escapeAttribute(room.I || '')}"
+                >${escapeHtml(room.I || '')}</span>
+              </div>
+            </div>
 
-                    const card = document.createElement('div');
-                    card.className = `room-card ${getRoomStatusClass(room)} ${isOpen ? 'is-open' : ''}`;
-                    
-                    card.innerHTML = `
-                        <!-- ▼ 3段ヘッダー（タップで開閉） ▼ -->
-                        <div class="room-header" onclick="toggleRoom('${room.A}')">
-                            <div class="header-top">
-                                <div class="header-info">
-                                    <div class="room-no">${room.A}号室</div>
-                                    ${venue ? `<div class="venue-badge">${venue}</div>` : ''}
-                                    <div class="room-user">担当: ${room.B || '未定'}</div>
-                                    ${isEarly ? '<span class="early-badge">E</span>' : ''}
-                                </div>
-                                <label class="header-check-label" onclick="event.stopPropagation()">
-                                    <input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 12)" ${isCompleted ? 'checked' : ''}> 点検
-                                </label>
-                            </div>
-                            
-                            <div class="header-middle">
-                                <div class="guest-name-area">
-                                    <div class="guest-furigana">${furigana}</div>
-                                    <div class="guest-name">${guestName}${nameSuffix}</div>
-                                </div>
-                                <div class="guest-count">${guestCount}</div>
-                            </div>
-                            
-                            <div class="header-bottom">
-                                ${isDeparted ? '<span class="status-badge active">出発済</span>' : '<span class="status-badge">未出発</span>'}
-                                <div class="memo-inline">
-                                    <span class="memo-label">備考</span><span class="memo-text">${room.I || ''}</span>
-                                </div>
-                                <span class="toggle-icon">▼</span>
-                            </div>
-                        </div>
+            <button
+              class="accordion-toggle"
+              type="button"
+              aria-expanded="${String(isAccordionOpen)}"
+              onclick="toggleAccordion(this, ${rowNumber})"
+            >
+              点検項目を表示
+            </button>
 
-                        <!-- ▼ アコーディオン（詳細・入力）エリア ▼ -->
-                        <div class="room-detail">
-                            <div class="edit-grid">
-                                <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 4)" ${room.D ? 'checked' : ''}> 忘れ物</label>
-                                <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 5)" ${room.E ? 'checked' : ''}> 茶器洗浄</label>
-                                <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 6)" ${room.F ? 'checked' : ''}> 備品補充</label>
-                                <label class="input-label"><input type="checkbox" onchange="updateValue(this, ${room.rowNumber}, 7)" ${room.G ? 'checked' : ''}> クローゼット</label>
-                            </div>
-                            <div class="bottom-controls">
-                                <div class="bottom-select-group group-summary">
-                                    <label>摘要</label>
-                                    <select onchange="updateValue(this, ${room.rowNumber}, 8)">
-                                        ${hOptions}
-                                    </select>
-                                </div>
-                                <div class="bottom-select-group group-checker">
-                                    <label>確認者</label>
-                                    <select onchange="updateValue(this, ${room.rowNumber}, 10)">
-                                        ${jOptions}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>`;
-                    fragment.appendChild(card);
-                });
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            } catch (e) { console.error(e); }
-        }
+            <div class="accordion-panel ${isAccordionOpen ? 'is-open' : ''}">
+              <div class="edit-grid">
+                <label class="input-label">
+                  <input
+                    type="checkbox"
+                    onchange="updateValue(this, ${rowNumber}, 4)"
+                    ${isTrue(room.D) ? 'checked' : ''}
+                  >
+                  忘れ物
+                </label>
+                <label class="input-label">
+                  <input
+                    type="checkbox"
+                    onchange="updateValue(this, ${rowNumber}, 5)"
+                    ${isTrue(room.E) ? 'checked' : ''}
+                  >
+                  茶器洗浄
+                </label>
+                <label class="input-label">
+                  <input
+                    type="checkbox"
+                    onchange="updateValue(this, ${rowNumber}, 6)"
+                    ${isTrue(room.F) ? 'checked' : ''}
+                  >
+                  備品補充
+                </label>
+                <label class="input-label">
+                  <input
+                    type="checkbox"
+                    onchange="updateValue(this, ${rowNumber}, 7)"
+                    ${isTrue(room.G) ? 'checked' : ''}
+                  >
+                  クローゼット
+                </label>
+              </div>
 
-        function updateValue(el, row, col) {
-            const val = el.type === 'checkbox' ? el.checked : el.value;
-            const colMap = { 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 10:'J', 11:'K', 12:'L' }; 
-            const targetRoom = allRoomsData.find(r => r.rowNumber === row); 
-            if (targetRoom) targetRoom[colMap[col]] = val;
-            const card = el.closest('.room-card');
-            
-            if (card && targetRoom) {
-                // 開閉状態を維持したままクラスを更新
-                const isOpen = openRoomIds.has(String(targetRoom.A));
-                card.className = `room-card ${getRoomStatusClass(targetRoom)} ${isOpen ? 'is-open' : ''}`;
-                renderMapColors(allRoomsData);
-            }
-            pauseRefreshUntil = Date.now() + 8000; 
-            
-            el.blur();
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ row: row, col: col, val: val }) })
-                .catch(e => console.error('送信エラー:', e));
-        }
+              <div class="bottom-controls">
+                <div class="bottom-select-group group-summary">
+                  <label>摘要</label>
+                  <select onchange="updateValue(this, ${rowNumber}, 8)">
+                    ${summaryOptions}
+                  </select>
+                </div>
+                <div class="bottom-select-group group-checker">
+                  <label>確認者</label>
+                  <select onchange="updateValue(this, ${rowNumber}, 10)">
+                    ${checkerOptions}
+                  </select>
+                </div>
+              </div>
+            </div>
+          `;
 
-        document.getElementById('btn-map-toggle').addEventListener('click', () => {
-            document.getElementById('map-modal').style.display = 'flex';
-            renderMapColors(allRoomsData);
+          roomFragment.appendChild(roomCard);
         });
 
-        document.getElementById('btn-map-close').addEventListener('click', () => {
-            document.getElementById('map-modal').style.display = 'none';
-            loadData(true);
+        roomListContainer.replaceChildren(roomFragment);
+      } catch (error) {
+        console.error('客室カードを表示できませんでした', error);
+      }
+    }
+
+    function isStaleResponse(responseData) {
+      const responseMessage = String(
+        responseData?.error ||
+        responseData?.message ||
+        responseData?.code ||
+        ''
+      );
+
+      return (
+        responseData?.stale === true ||
+        responseData?.code === 'STALE_DATA' ||
+        responseMessage.includes('古い') ||
+        responseMessage.toLowerCase().includes('stale')
+      );
+    }
+
+    async function updateValue(element, rowNumber, columnNumber) {
+      if (
+        !Number.isInteger(rowNumber) ||
+        !Number.isInteger(columnNumber)
+      ) {
+        return;
+      }
+
+      const columnKeyMap = {
+        3: 'C',
+        4: 'D',
+        5: 'E',
+        6: 'F',
+        7: 'G',
+        8: 'H',
+        10: 'J',
+        11: 'K',
+        12: 'L'
+      };
+      const columnKey = columnKeyMap[columnNumber];
+      const targetRoom = allRoomsData.find(
+        (room) => Number(room.rowNumber) === rowNumber
+      );
+
+      if (!targetRoom || !columnKey) {
+        return;
+      }
+
+      if (currentDataVersion === '') {
+        renderAll();
+        alert(
+          'データバージョンを取得できないため、安全のため更新を中止しました。GASの公開版を確認してください。'
+        );
+        await loadData(true);
+        return;
+      }
+
+      const newValue =
+        element.type === 'checkbox'
+          ? element.checked
+          : element.value;
+      const previousValue = targetRoom[columnKey];
+      const roomCard = element.closest('.room-card');
+
+      targetRoom[columnKey] = newValue;
+
+      if (roomCard) {
+        roomCard.className =
+          'room-card ' +
+          getRoomStatusClass(targetRoom) +
+          ' is-saving';
+        roomCard.setAttribute('aria-busy', 'true');
+      }
+
+      renderMapColors(allRoomsData);
+      pauseRefreshUntil = Date.now() + 8000;
+      element.blur();
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        POST_TIMEOUT_MS
+      );
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            row: rowNumber,
+            col: columnNumber,
+            val: newValue,
+            version: currentDataVersion
+          })
         });
 
-        document.getElementById('btn-map-refresh').addEventListener('click', () => {
-            fetchAndRenderMap();
-        });
-    </script>
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        const responseText = await response.text();
+        let responseData = {};
+
+        if (responseText.trim()) {
+          try {
+            responseData = JSON.parse(responseText);
+          } catch (error) {
+            throw new Error('保存結果を確認できませんでした');
+          }
+        }
+
+        if (isStaleResponse(responseData)) {
+          alert(
+            'ほかの端末でデータが更新されています。最新状態を読み込み直します。'
+          );
+          location.reload();
+          return;
+        }
+
+        if (
+          responseData.success === false ||
+          responseData.ok === false
+        ) {
+          throw new Error(
+            responseData.message ||
+            responseData.error ||
+            '保存が拒否されました'
+          );
+        }
+
+        const receivedVersion = extractVersion(responseData);
+
+        if (receivedVersion !== '') {
+          currentDataVersion = receivedVersion;
+        }
+      } catch (error) {
+        targetRoom[columnKey] = previousValue;
+
+        if (element.type === 'checkbox') {
+          element.checked = isTrue(previousValue);
+        } else {
+          element.value = previousValue ?? '';
+        }
+
+        if (roomCard) {
+          roomCard.className =
+            'room-card ' + getRoomStatusClass(targetRoom);
+        }
+
+        renderMapColors(allRoomsData);
+
+        const errorMessage =
+          error.name === 'AbortError'
+            ? '通信がタイムアウトしました'
+            : error.message;
+
+        alert(
+          '保存できなかったため、変更前の状態に戻しました。\n' +
+          errorMessage
+        );
+      } finally {
+        clearTimeout(timeoutId);
+
+        if (roomCard) {
+          roomCard.classList.remove('is-saving');
+          roomCard.removeAttribute('aria-busy');
+        }
+      }
+    }
+
+    document
+      .getElementById('btn-map-toggle')
+      .addEventListener('click', () => {
+        document.getElementById('map-modal').style.display = 'flex';
+        renderMapColors(allRoomsData);
+      });
+
+    document
+      .getElementById('btn-map-close')
+      .addEventListener('click', () => {
+        document.getElementById('map-modal').style.display = 'none';
+        loadData(true);
+      });
+
+    document
+      .getElementById('btn-map-refresh')
+      .addEventListener('click', fetchAndRenderMap);
+  </script>
 </body>
 </html>
