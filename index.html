@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -182,8 +183,8 @@
     }
 
     .guest-block {
-      min-height: 42px;
-      margin: 2px 0 9px;
+      min-height: 38px;
+      margin: 2px 0 5px;
     }
 
     .guest-main {
@@ -208,10 +209,10 @@
     }
 
     .view-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 12px;
-      margin-bottom: 7px;
       font-size: 0.85rem;
     }
 
@@ -233,6 +234,7 @@
       align-items: center;
       gap: 8px;
       min-width: 0;
+      overflow: hidden;
     }
 
     .memo-label {
@@ -250,24 +252,30 @@
     .accordion-toggle {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      padding: 8px 2px 6px;
+      justify-content: center;
+      width: 44px;
+      height: 32px;
+      margin: -6px -6px -6px 0;
+      padding: 0;
       color: #374151;
       background: transparent;
       border: 0;
-      border-top: 1px solid #0003;
-      font-weight: bold;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    .accordion-toggle::after {
-      content: "▼";
-      font-size: 0.72rem;
+    .accordion-toggle:hover,
+    .accordion-toggle:focus-visible {
+      background: #ffffff70;
+    }
+
+    .accordion-chevron {
+      font-size: 1rem;
+      line-height: 1;
       transition: transform 0.2s;
     }
 
-    .accordion-toggle[aria-expanded="true"]::after {
+    .accordion-toggle[aria-expanded="true"] .accordion-chevron {
       transform: rotate(180deg);
     }
 
@@ -475,7 +483,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.14.1</div>
+    <div class="version-info">CheckNest Ver.14.3</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -547,6 +555,16 @@
       return escapeHtml(value).replace(/`/g, '&#096;');
     }
 
+    function shouldAppendHonorific(guestName) {
+      const normalizedName = String(guestName ?? '').trim();
+      return (
+        normalizedName !== '' &&
+        normalizedName !== '予備' &&
+        normalizedName !== '予備部屋' &&
+        normalizedName !== '緊急時用'
+      );
+    }
+
     function isTrue(value) {
       return value === true || String(value).toLowerCase() === 'true';
     }
@@ -586,7 +604,8 @@
     }
 
     function toggleAccordion(button, roomRowNumber) {
-      const panel = button.nextElementSibling;
+      const viewRow = button.closest('.view-row');
+      const panel = viewRow ? viewRow.nextElementSibling : null;
       if (!panel) {
         return;
       }
@@ -1080,7 +1099,10 @@
             <div class="guest-block">
               <div class="guest-main">
                 <span class="guest-name">
-                  ${room.M ? escapeHtml(room.M) + '　様' : ''}
+                  ${room.M
+                    ? escapeHtml(room.M) +
+                      (shouldAppendHonorific(room.M) ? '　様' : '')
+                    : ''}
                 </span>
                 <span class="guest-count">${escapeHtml(room.N || '')}</span>
               </div>
@@ -1098,16 +1120,16 @@
                   title="${escapeAttribute(room.I || '')}"
                 >${escapeHtml(room.I || '')}</span>
               </div>
+              <button
+                class="accordion-toggle"
+                type="button"
+                aria-label="点検項目を表示"
+                aria-expanded="${String(isAccordionOpen)}"
+                onclick="toggleAccordion(this, ${rowNumber})"
+              >
+                <span class="accordion-chevron" aria-hidden="true">▼</span>
+              </button>
             </div>
-
-            <button
-              class="accordion-toggle"
-              type="button"
-              aria-expanded="${String(isAccordionOpen)}"
-              onclick="toggleAccordion(this, ${rowNumber})"
-            >
-              点検項目を表示
-            </button>
 
             <div class="accordion-panel ${isAccordionOpen ? 'is-open' : ''}">
               <div class="edit-grid">
