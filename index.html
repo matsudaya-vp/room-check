@@ -483,7 +483,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.14.3</div>
+    <div class="version-info">CheckNest Ver.14.4</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -563,6 +563,28 @@
         normalizedName !== '予備部屋' &&
         normalizedName !== '緊急時用'
       );
+    }
+
+    function getMapGuestName(guestName) {
+      const normalizedName = String(guestName ?? '').trim();
+
+      if (normalizedName === '') {
+        return '';
+      }
+
+      if (
+        normalizedName === '予備' ||
+        normalizedName === '予備部屋'
+      ) {
+        return '予備';
+      }
+
+      if (normalizedName === '緊急時用') {
+        return '緊急';
+      }
+
+      const surname = normalizedName.split(/[ \u3000]+/)[0];
+      return Array.from(surname).slice(0, 3).join('');
     }
 
     function isTrue(value) {
@@ -936,7 +958,7 @@
         const guestCountElement = roomCell.querySelector('.map-count');
 
         if (guestNameElement) {
-          guestNameElement.textContent = room.M || '';
+          guestNameElement.textContent = getMapGuestName(room.M);
         }
 
         if (guestCountElement) {
