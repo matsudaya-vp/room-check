@@ -73,7 +73,7 @@
     }
 
     .room-card {
-      --staff-action-width: 112px;
+      --staff-action-width: 82px;
       padding: 15px;
       margin-bottom: 15px;
       border-left: 5px solid;
@@ -151,7 +151,7 @@
       background: #ffffffb3;
       border: 1px solid #cbd5e1;
       border-radius: 4px;
-      font-size: 0.85rem;
+      font-size: 0.9375rem;
       white-space: nowrap;
     }
 
@@ -166,24 +166,36 @@
 
     .staff-action {
       display: inline-flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 2px;
       flex: 0 0 var(--staff-action-width);
       width: var(--staff-action-width);
       min-height: 48px;
-      padding: 10px 7px;
+      padding: 4px 7px;
       background: var(--status-button, #505b63);
       border: 1px solid var(--status-button, #505b63);
       border-radius: 7px;
       color: #fff;
-      font-weight: bold;
-      white-space: nowrap;
+      line-height: 1.2;
       cursor: pointer;
     }
 
     .staff-action.is-recorded {
-      background: var(--status-button, #505b63);
-      border-color: var(--status-button, #505b63);
+      background: #ffffffa6;
+      color: var(--status-button, #505b63);
+    }
+
+    .staff-action-role {
+      font-size: 0.6875rem;
+    }
+
+    .staff-action-name {
+      max-width: 100%;
+      font-size: 0.9375rem;
+      font-weight: bold;
+      overflow-wrap: anywhere;
     }
 
     .staff-action:focus-visible {
@@ -462,7 +474,6 @@
 
       .room-card {
         padding: 12px;
-        --staff-action-width: 108px;
       }
 
       .header-info {
@@ -479,10 +490,6 @@
 
       .room-user {
         order: 3;
-      }
-
-      .staff-action {
-        font-size: 0.9rem;
       }
 
       .bottom-controls {
@@ -528,7 +535,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.15.0-ma3.4 テスト版</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.5 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -1197,12 +1204,13 @@
               <div class="header-info">
                 <div class="room-no">${escapeHtml(roomNumber)}号室</div>
                 <div class="venue">${escapeHtml(room.O || '')}</div>
-                <div class="room-user">担当: ${escapeHtml(room.B || '未定')}</div>
+                <div class="room-user">担当 ${escapeHtml(room.B || '未定')}</div>
                 ${isEarly ? '<span class="early-badge">E</span>' : ''}
               </div>
               <button class="header-check-label staff-action ${isCompleted ? 'is-recorded' : ''}" type="button"
                 onclick="openStaffPicker(${rowNumber}, 10)">
-                ${isCompleted ? '点検：' + escapeHtml(currentInspector) : '点検'}
+                <span class="staff-action-role">点検</span>
+                <span class="staff-action-name">${isCompleted ? escapeHtml(currentInspector) : '選ぶ'}</span>
               </button>
             </div>
 
@@ -1286,7 +1294,8 @@
                 </div>
                 <div class="bottom-select-group group-checker">
                   <button class="staff-trigger staff-action ${isBlankChoice(currentChecker) ? '' : 'is-recorded'}" type="button" onclick="openStaffPicker(${rowNumber}, 11)">
-                    ${isBlankChoice(currentChecker) ? '確認' : '確認：' + escapeHtml(currentChecker)}
+                    <span class="staff-action-role">確認</span>
+                    <span class="staff-action-name">${isBlankChoice(currentChecker) ? '選ぶ' : escapeHtml(currentChecker)}</span>
                   </button>
                 </div>
               </div>
@@ -1371,9 +1380,8 @@
       const card = element.closest('.room-card');
       if (card) card.className = 'room-card ' + getRoomStatusClass(room);
       if (columnNumber === 10 || columnNumber === 11) {
-        const label = columnNumber === 10 ? '点検' : '確認';
         const hasName = !isBlankChoice(value);
-        element.textContent = hasName ? label + '：' + value : label;
+        element.querySelector('.staff-action-name').textContent = hasName ? value : '選ぶ';
         element.classList.toggle('is-recorded', hasName);
       }
       renderMapColors(allRoomsData);
