@@ -73,6 +73,7 @@
     }
 
     .room-card {
+      --staff-action-width: 112px;
       padding: 15px;
       margin-bottom: 15px;
       border-left: 5px solid;
@@ -167,10 +168,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      flex: 0 0 var(--staff-action-width, 144px);
-      width: var(--staff-action-width, 144px);
+      flex: 0 0 var(--staff-action-width);
+      width: var(--staff-action-width);
       min-height: 48px;
-      padding: 10px;
+      padding: 10px 7px;
       background: var(--status-button, #505b63);
       border: 1px solid var(--status-button, #505b63);
       border-radius: 7px;
@@ -346,7 +347,7 @@
     }
 
     .group-checker {
-      flex: 0 0 var(--staff-action-width, 144px);
+      flex: 0 0 var(--staff-action-width);
       justify-content: flex-end;
     }
 
@@ -430,28 +431,28 @@
     }
 
     .legend-final {
-      background: #e5f0e8;
-      border-color: #3f795a;
+      background: #22c55e;
+      border-color: #16a34a;
     }
 
     .legend-departed {
-      background: #fff0dc;
-      border-color: #c48236;
+      background: #f97316;
+      border-color: #ea580c;
     }
 
     .legend-inspected {
-      background: #e4f0f8;
-      border-color: #3d7ca6;
+      background: #3d85c6;
+      border-color: #296296;
     }
 
     .legend-standby {
-      background: #faf8f2;
-      border-color: #9a9587;
+      background: #e2e8f0;
+      border-color: #cbd5e0;
     }
 
     .legend-default {
-      background: #dfe2e3;
-      border-color: #717b80;
+      background: #666;
+      border-color: #555;
     }
 
     @media (max-width: 430px) {
@@ -461,7 +462,7 @@
 
       .room-card {
         padding: 12px;
-        --staff-action-width: 128px;
+        --staff-action-width: 108px;
       }
 
       .header-info {
@@ -495,7 +496,7 @@
       }
 
       .group-checker {
-        flex: 0 0 var(--staff-action-width, 144px);
+        flex: 0 0 var(--staff-action-width);
         min-width: 0;
       }
 
@@ -527,7 +528,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.15.0-ma3.3 テスト版</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.4 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -1008,29 +1009,29 @@
 
       const statusStyles = {
         'status-final': {
-          background: '#e5f0e8',
-          text: '#243242',
-          border: '#3f795a'
+          background: '#22c55e',
+          text: '#fff',
+          border: '#16a34a'
         },
         'status-departed': {
-          background: '#fff0dc',
-          text: '#243242',
-          border: '#c48236'
+          background: '#f97316',
+          text: '#fff',
+          border: '#ea580c'
         },
         'status-inspected': {
-          background: '#e4f0f8',
-          text: '#243242',
-          border: '#3d7ca6'
+          background: '#3d85c6',
+          text: '#fff',
+          border: '#296296'
         },
         'status-standby': {
-          background: '#faf8f2',
-          text: '#243242',
-          border: '#9a9587'
+          background: '#e2e8f0',
+          text: '#2d3748',
+          border: '#cbd5e0'
         },
         'status-default': {
-          background: '#dfe2e3',
-          text: '#243242',
-          border: '#717b80'
+          background: '#666',
+          text: '#fff',
+          border: '#555'
         }
       };
 
