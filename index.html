@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -14,7 +13,7 @@
       margin: 0;
       padding: 10px;
       color: #243242;
-      background: #f8f9fa;
+      background: #f7f6f2;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -82,34 +81,36 @@
       transition: opacity 0.2s, background-color 0.3s, border-color 0.3s;
     }
 
-    .room-card.is-saving {
-      pointer-events: none;
-      opacity: 0.55;
-    }
+    #save-status { font-size: 0.8rem; color: #46596a; }
 
     .status-default {
-      background: #b0b5b9;
-      border-left-color: #6b7280;
+      background: #dfe2e3;
+      border-left-color: #717b80;
+      --status-button: #505b63;
     }
 
     .status-standby {
-      background: #e2e8f0;
-      border-left-color: #666;
+      background: #faf8f2;
+      border-left-color: #9a9587;
+      --status-button: #6a6151;
     }
 
     .status-inspected {
-      background: #e0f2fe;
-      border-left-color: #0ea5e9;
+      background: #e4f0f8;
+      border-left-color: #3d7ca6;
+      --status-button: #295e80;
     }
 
     .status-departed {
-      background: #fff7ed;
-      border-left-color: #f97316;
+      background: #fff0dc;
+      border-left-color: #c48236;
+      --status-button: #985623;
     }
 
     .status-final {
-      background: #f0fdf4;
-      border-left-color: #22c55e;
+      background: #e5f0e8;
+      border-left-color: #3f795a;
+      --status-button: #2d644a;
     }
 
     .room-header {
@@ -162,17 +163,31 @@
       font-weight: 800;
     }
 
-    .header-check-label {
-      display: flex;
+    .staff-action {
+      display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 8px 14px;
-      background: #fff;
-      border: 1px solid #cbd5e1;
+      justify-content: center;
+      flex: 0 0 var(--staff-action-width, 144px);
+      width: var(--staff-action-width, 144px);
+      min-height: 48px;
+      padding: 10px;
+      background: var(--status-button, #505b63);
+      border: 1px solid var(--status-button, #505b63);
       border-radius: 7px;
+      color: #fff;
       font-weight: bold;
       white-space: nowrap;
       cursor: pointer;
+    }
+
+    .staff-action.is-recorded {
+      background: var(--status-button, #505b63);
+      border-color: var(--status-button, #505b63);
+    }
+
+    .staff-action:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
     }
 
     .header-check-label input,
@@ -225,8 +240,8 @@
     }
 
     .status-badge.active {
-      color: #fff;
-      background: #ef4444;
+      color: #243242;
+      background: #ffffffd9;
     }
 
     .memo-inline {
@@ -300,14 +315,20 @@
       align-items: center;
       gap: 8px;
       padding: 10px 8px;
-      background: #f1f5f9bf;
+      background: #ffffffa6;
       border-radius: 6px;
       font-size: 0.9rem;
       cursor: pointer;
     }
 
+    .input-label input {
+      accent-color: var(--status-button, #505b63);
+    }
+
     .bottom-controls {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 10px;
       padding-top: 12px;
       border-top: 2px solid #0003;
@@ -320,11 +341,13 @@
     }
 
     .group-summary {
-      flex: 55;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .group-checker {
-      flex: 45;
+      flex: 0 0 var(--staff-action-width, 144px);
+      justify-content: flex-end;
     }
 
     .bottom-select-group label {
@@ -335,6 +358,7 @@
     .bottom-select-group select {
       width: 100%;
       min-width: 0;
+      min-height: 44px;
       padding: 7px 8px;
       background: #fffffff2;
       border: 1px solid #cbd5e1;
@@ -406,28 +430,28 @@
     }
 
     .legend-final {
-      background: #22c55e;
-      border-color: #16a34a;
+      background: #e5f0e8;
+      border-color: #3f795a;
     }
 
     .legend-departed {
-      background: #f97316;
-      border-color: #ea580c;
+      background: #fff0dc;
+      border-color: #c48236;
     }
 
     .legend-inspected {
-      background: #3d85c6;
-      border-color: #296296;
+      background: #e4f0f8;
+      border-color: #3d7ca6;
     }
 
     .legend-standby {
-      background: #e2e8f0;
-      border-color: #cbd5e0;
+      background: #faf8f2;
+      border-color: #9a9587;
     }
 
     .legend-default {
-      background: #666;
-      border-color: #555;
+      background: #dfe2e3;
+      border-color: #717b80;
     }
 
     @media (max-width: 430px) {
@@ -437,6 +461,7 @@
 
       .room-card {
         padding: 12px;
+        --staff-action-width: 128px;
       }
 
       .header-info {
@@ -455,8 +480,8 @@
         order: 3;
       }
 
-      .header-check-label {
-        padding: 8px 10px;
+      .staff-action {
+        font-size: 0.9rem;
       }
 
       .bottom-controls {
@@ -470,7 +495,7 @@
       }
 
       .group-checker {
-        flex: 0 0 152px;
+        flex: 0 0 var(--staff-action-width, 144px);
         min-width: 0;
       }
 
@@ -478,6 +503,13 @@
         min-height: 74px;
       }
     }
+    #staff-picker { width: min(94vw, 580px); border: 1px solid #d1dce4; border-radius: 12px; padding: 16px; }
+    #staff-picker::backdrop { background: #18283788; }
+    #staff-picker h2 { margin: 0 0 12px; font-size: 1.1rem; }
+    .staff-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .staff-choices button { min-height: 44px; border: 1px solid #cad8d0; border-radius: 6px; background: #fff; color: inherit; }
+    .staff-choices button[aria-pressed="true"] { background: #23533b; color: #fff; }
+    #staff-picker form { margin-top: 12px; text-align: right; }
   </style>
 </head>
 <body>
@@ -490,11 +522,12 @@
       <label class="filter-label"><input type="checkbox" value="5" checked onchange="saveFilters(); renderAll()"> 5</label>
       <label class="filter-label"><input type="checkbox" value="6" checked onchange="saveFilters(); renderAll()"> 6</label>
       <button class="refresh-btn" type="button" onclick="loadData(true)" aria-label="更新">&#8635;</button>
+      <span id="save-status" role="status"></span>
     </div>
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.14.5</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.3 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -526,9 +559,15 @@
     </div>
   </div>
 
+  <dialog id="staff-picker" aria-labelledby="staff-picker-title">
+    <h2 id="staff-picker-title"></h2>
+    <div class="staff-choices"></div>
+    <form method="dialog"><button type="submit">閉じる</button></form>
+  </dialog>
   <script>
+    // MA3専用です。本番の room-check-prod には、このファイルを配置しません。
     const GAS_URL =
-      'https://script.google.com/macros/s/AKfycbwgwaw1tuo4FMm_3Wd98_B5Z-gaUMQYHArWBMuWaOyex4rXDjALH4nXr0B1UaX192ry/exec';
+      'https://script.google.com/macros/s/AKfycbzal4UfpLACFd3tP4lCN_OMvxvwkGUALWEPoTNdlcoKsO4EoP_uRXCzeKjh-OUroZGH5g/exec';
     const POLLING_INTERVAL = 10000;
     const POST_TIMEOUT_MS = 8000;
     const FILTER_STORAGE_KEY = 'selectedFloors';
@@ -537,10 +576,10 @@
     let allRoomsData = [];
     let summaryList = [];
     let masterStaffList = [];
+    let inspectorList = [];
     let isMasterLoaded = false;
     let currentDataVersion = '';
     let lastSuccessfulFetchAt = null;
-    let pauseRefreshUntil = 0;
     let isFetching = false;
     let refreshTimer = null;
 
@@ -712,7 +751,6 @@
         return;
       }
 
-      pauseRefreshUntil = 0;
       const isMapOpen =
         document.getElementById('map-modal').style.display === 'flex';
 
@@ -771,6 +809,51 @@
       );
     }
 
+    async function callServer(method, data, signal) {
+      if (method !== 'loadTestRooms' && method !== 'saveTestRoom') {
+        throw new Error('通信処理が正しく指定されていません。');
+      }
+      if (!window.google?.script?.run) {
+        const requestUrl = new URL(GAS_URL);
+        requestUrl.searchParams.set('api', '1');
+        requestUrl.searchParams.set('t', String(Date.now()));
+        if (method === 'loadTestRooms' && data === true) {
+          requestUrl.searchParams.set('init', 'true');
+        }
+        const options = { signal, cache: 'no-store', credentials: 'omit' };
+        if (method === 'saveTestRoom') {
+          options.method = 'POST';
+          options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+          options.body = JSON.stringify(data);
+        }
+        const response = await fetch(requestUrl.toString(), options);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        try {
+          return await response.json();
+        } catch (error) {
+          throw new Error('MA3専用GASの応答を確認できません。デプロイとアクセス設定を確認してください。');
+        }
+      }
+      return new Promise((resolve, reject) => {
+        const onAbort = () => reject(new DOMException('通信がタイムアウトしました', 'AbortError'));
+        if (signal.aborted) {
+          onAbort();
+          return;
+        }
+        signal.addEventListener('abort', onAbort, { once: true });
+        const runner = google.script.run
+          .withSuccessHandler(result => {
+            signal.removeEventListener('abort', onAbort);
+            resolve(result);
+          })
+          .withFailureHandler(error => {
+            signal.removeEventListener('abort', onAbort);
+            reject(error);
+          });
+        runner[method](data);
+      });
+    }
+
     async function loadData(force = false) {
       const scheduleNextLoad = () => {
         clearTimeout(refreshTimer);
@@ -783,7 +866,6 @@
       if (
         !force &&
         (isFetching ||
-          Date.now() < pauseRefreshUntil ||
           isMapOpen ||
           document.hidden)
       ) {
@@ -803,33 +885,32 @@
         return;
       }
 
-      if (isFetching) {
+      if (isFetching || saving) {
+        scheduleNextLoad();
         return;
       }
 
+      const requestGeneration = saveGeneration;
       isFetching = true;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const initParameter = !isMasterLoaded ? '&init=true' : '';
-        const requestUrl =
-          GAS_URL + '?t=' + Date.now() + initParameter;
-        const response = await fetch(requestUrl, {
-          signal: controller.signal,
-          cache: 'no-store'
-        });
-
-        if (!response.ok) {
-          throw new Error('HTTP ' + response.status);
+        const responseData = await callServer('loadTestRooms', !isMasterLoaded, controller.signal);
+        if (responseData?.success !== true) {
+          throw new Error(responseData?.message || '客室データを取得できませんでした。');
+        }
+        if (responseData.schema !== 'checknest-ma3' || responseData.apiVersion !== 2) {
+          throw new Error('MA3専用GASのAPIバージョン2が必要です。');
         }
 
-        const responseData = await response.json();
-
-        if (Date.now() < pauseRefreshUntil) {
+        if (saving || requestGeneration !== saveGeneration) {
           return;
         }
 
+        if (Array.isArray(responseData.inspectorList)) {
+          inspectorList = responseData.inspectorList;
+        }
         if (Array.isArray(responseData?.summaryList)) {
           summaryList = responseData.summaryList;
         }
@@ -840,7 +921,8 @@
 
         if (
           Array.isArray(responseData?.summaryList) &&
-          Array.isArray(responseData?.staffList)
+          Array.isArray(responseData?.staffList) &&
+          Array.isArray(responseData?.inspectorList)
         ) {
           isMasterLoaded = true;
         }
@@ -855,13 +937,14 @@
           throw new Error('客室データの形式が正しくありません');
         }
 
-        allRoomsData = receivedRooms;
         const receivedVersion = extractVersion(responseData);
-
-        if (receivedVersion !== '') {
-          currentDataVersion = receivedVersion;
+        if (typeof receivedVersion !== 'string' || receivedVersion.trim() === '') {
+          throw new Error('データバージョンを取得できませんでした。');
         }
+        allRoomsData = receivedRooms;
+        currentDataVersion = receivedVersion;
 
+        document.getElementById('save-status').textContent = '';
         lastSuccessfulFetchAt = new Date();
         renderAll();
 
@@ -871,6 +954,8 @@
       } catch (error) {
         console.error(error);
 
+        document.getElementById('save-status').textContent =
+          currentDataVersion ? '取得失敗・表示は前回取得分' : '読込エラー';
         if (!allRoomsData.length) {
           const errorMessage =
             error.name === 'AbortError'
@@ -897,7 +982,7 @@
         timestampElement.textContent = '取得中...';
       }
 
-      if (Date.now() < pauseRefreshUntil) {
+      if (saving) {
         renderMapColors(allRoomsData);
         return;
       }
@@ -923,29 +1008,29 @@
 
       const statusStyles = {
         'status-final': {
-          background: '#22c55e',
-          text: '#fff',
-          border: '#16a34a'
+          background: '#e5f0e8',
+          text: '#243242',
+          border: '#3f795a'
         },
         'status-departed': {
-          background: '#f97316',
-          text: '#fff',
-          border: '#ea580c'
+          background: '#fff0dc',
+          text: '#243242',
+          border: '#c48236'
         },
         'status-inspected': {
-          background: '#3d85c6',
-          text: '#fff',
-          border: '#296296'
+          background: '#e4f0f8',
+          text: '#243242',
+          border: '#3d7ca6'
         },
         'status-standby': {
-          background: '#e2e8f0',
-          text: '#2d3748',
-          border: '#cbd5e0'
+          background: '#faf8f2',
+          text: '#243242',
+          border: '#9a9587'
         },
         'status-default': {
-          background: '#666',
-          text: '#fff',
-          border: '#555'
+          background: '#dfe2e3',
+          text: '#243242',
+          border: '#717b80'
         }
       };
 
@@ -986,9 +1071,9 @@
     function getRoomStatusClass(room) {
       const staffName = String(room.B || '').trim();
       const summary = String(room.H || '').trim();
-      const checkerName = String(room.J || '').trim();
-      const isDeparted = isTrue(room.K);
-      const isCompleted = isTrue(room.L);
+      const checkerName = String(room.K || '').trim();
+      const isDeparted = isTrue(room.L);
+      const isCompleted = !isBlankChoice(String(room.J || '').trim());
       const isCheckedByPerson =
         !isBlankChoice(checkerName) && checkerName !== '着';
       const isStandby =
@@ -1088,18 +1173,13 @@
 
           const roomNumber = String(room.A ?? '');
           const isEarly = isTrue(room.C);
-          const isDeparted = isTrue(room.K);
-          const isCompleted = isTrue(room.L);
+          const isDeparted = isTrue(room.L);
+          const isCompleted = !isBlankChoice(String(room.J || '').trim());
           const isAccordionOpen =
             openRoomRows.has(String(rowNumber));
-          const currentChecker = String(room.J || '').trim();
+          const currentInspector = String(room.J || '').trim();
+          const currentChecker = String(room.K || '').trim();
           const currentSummary = String(room.H || '').trim();
-
-          const checkerOptions = buildOptions(
-            masterStaffList,
-            currentChecker,
-            '-未選択-'
-          );
           const summaryOptions = buildOptions(
             summaryList,
             currentSummary,
@@ -1119,14 +1199,10 @@
                 <div class="room-user">担当: ${escapeHtml(room.B || '未定')}</div>
                 ${isEarly ? '<span class="early-badge">E</span>' : ''}
               </div>
-              <label class="header-check-label">
-                <input
-                  type="checkbox"
-                  onchange="updateValue(this, ${rowNumber}, 12)"
-                  ${isCompleted ? 'checked' : ''}
-                >
-                点検
-              </label>
+              <button class="header-check-label staff-action ${isCompleted ? 'is-recorded' : ''}" type="button"
+                onclick="openStaffPicker(${rowNumber}, 10)">
+                ${isCompleted ? '点検：' + escapeHtml(currentInspector) : '点検'}
+              </button>
             </div>
 
             <div class="guest-block">
@@ -1208,10 +1284,9 @@
                   </select>
                 </div>
                 <div class="bottom-select-group group-checker">
-                  <label>確認者</label>
-                  <select onchange="updateValue(this, ${rowNumber}, 10)">
-                    ${checkerOptions}
-                  </select>
+                  <button class="staff-trigger staff-action ${isBlankChoice(currentChecker) ? '' : 'is-recorded'}" type="button" onclick="openStaffPicker(${rowNumber}, 11)">
+                    ${isBlankChoice(currentChecker) ? '確認' : '確認：' + escapeHtml(currentChecker)}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1242,158 +1317,116 @@
       );
     }
 
-    async function updateValue(element, rowNumber, columnNumber) {
-      if (
-        !Number.isInteger(rowNumber) ||
-        !Number.isInteger(columnNumber)
-      ) {
-        return;
-      }
-
-      const columnKeyMap = {
-        3: 'C',
-        4: 'D',
-        5: 'E',
-        6: 'F',
-        7: 'G',
-        8: 'H',
-        10: 'J',
-        11: 'K',
-        12: 'L'
-      };
-      const columnKey = columnKeyMap[columnNumber];
-      const targetRoom = allRoomsData.find(
-        (room) => Number(room.rowNumber) === rowNumber
-      );
-
-      if (!targetRoom || !columnKey) {
-        return;
-      }
-
-      if (currentDataVersion === '') {
-        renderAll();
-        alert(
-          'データバージョンを取得できないため、安全のため更新を中止しました。GASの公開版を確認してください。'
-        );
-        await loadData(true);
-        return;
-      }
-
-      const newValue =
-        element.type === 'checkbox'
-          ? element.checked
-          : element.value;
-      const previousValue = targetRoom[columnKey];
-      const roomCard = element.closest('.room-card');
-
-      targetRoom[columnKey] = newValue;
-
-      if (roomCard) {
-        roomCard.className =
-          'room-card ' +
-          getRoomStatusClass(targetRoom) +
-          ' is-saving';
-        roomCard.setAttribute('aria-busy', 'true');
-      }
-
-      renderMapColors(allRoomsData);
-      pauseRefreshUntil = Date.now() + 8000;
-      element.blur();
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        POST_TIMEOUT_MS
-      );
-
-      try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify({
-            row: rowNumber,
-            col: columnNumber,
-            val: newValue,
-            version: currentDataVersion
-          })
+    function openStaffPicker(rowNumber, columnNumber) {
+      const room = allRoomsData.find(item => Number(item.rowNumber) === rowNumber);
+      if (!room) return;
+      const dialog = document.getElementById('staff-picker');
+      const isInspector = columnNumber === 10;
+      const currentValue = isInspector ? room.J : room.K;
+      const choices = isInspector ? inspectorList : masterStaffList;
+      dialog.querySelector('h2').textContent = isInspector ? '点検者を選択' : '確認者を選択';
+      const list = dialog.querySelector('.staff-choices');
+      list.replaceChildren();
+      for (const value of new Set(choices.map(String).filter(Boolean))) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.value = value;
+        button.textContent = value;
+        button.setAttribute('aria-pressed', String(value === currentValue));
+        button.addEventListener('click', () => {
+          const card = document.querySelector('.room-card[data-row="' + rowNumber + '"]');
+          const control = card?.querySelector(isInspector ? '.header-check-label' : '.staff-trigger');
+          dialog.close();
+          if (control) updateValue(control, rowNumber, columnNumber, value);
         });
+        list.append(button);
+      }
+      if (!list.childElementCount) list.textContent = '選択肢を取得できませんでした。';
+      dialog.showModal();
+    }
 
-        if (!response.ok) {
-          throw new Error('HTTP ' + response.status);
-        }
+    const updateColumns = { 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 10: 'J', 11: 'K', 12: 'L' };
+    const pendingSaves = [];
+    let saving = false;
+    let saveGeneration = 0;
 
-        const responseText = await response.text();
-        let responseData = {};
+    function updateValue(element, rowNumber, columnNumber, selectedValue) {
+      if (!Number.isInteger(rowNumber) || !Number.isInteger(columnNumber)) return;
+      const key = updateColumns[columnNumber];
+      const room = allRoomsData.find(item => Number(item.rowNumber) === rowNumber);
+      if (!room || !key) return;
+      if (!currentDataVersion) {
+        renderAll();
+        alert('最新データを読み込んでから、もう一度入力してください。');
+        void loadData(true);
+        return;
+      }
 
-        if (responseText.trim()) {
+      const value = selectedValue ?? (element.type === 'checkbox' ? element.checked : element.value);
+      if (room[key] === value) return;
+      pendingSaves.push({ rowNumber, columnNumber, key, room, value, previous: room[key] });
+      saveGeneration++;
+      room[key] = value;
+      const card = element.closest('.room-card');
+      if (card) card.className = 'room-card ' + getRoomStatusClass(room);
+      if (columnNumber === 10 || columnNumber === 11) {
+        const label = columnNumber === 10 ? '点検' : '確認';
+        const hasName = !isBlankChoice(value);
+        element.textContent = hasName ? label + '：' + value : label;
+        element.classList.toggle('is-recorded', hasName);
+      }
+      renderMapColors(allRoomsData);
+      if (!saving) void drainSaves();
+    }
+
+    async function drainSaves() {
+      saving = true;
+      const status = document.getElementById('save-status');
+      status.textContent = '保存中…';
+      try {
+        while (pendingSaves.length) {
+          const job = pendingSaves[0];
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
           try {
-            responseData = JSON.parse(responseText);
-          } catch (error) {
-            throw new Error('保存結果を確認できませんでした');
+            const result = await callServer('saveTestRoom', {
+              row: job.rowNumber,
+              col: job.columnNumber,
+              val: job.value,
+              version: currentDataVersion
+            }, controller.signal);
+            if (isStaleResponse(result)) throw new Error('シートが別の操作で更新されました。');
+            const version = extractVersion(result);
+            if (result?.success !== true || typeof version !== 'string' || !version.trim()) {
+              throw new Error(result?.message || '保存結果を確認できませんでした。');
+            }
+            currentDataVersion = version;
+            pendingSaves.shift();
+          } finally {
+            clearTimeout(timer);
           }
         }
-
-        if (isStaleResponse(responseData)) {
-          alert(
-            'ほかの端末でデータが更新されています。最新状態を読み込み直します。'
-          );
-          location.reload();
-          return;
-        }
-
-        if (
-          responseData.success === false ||
-          responseData.ok === false
-        ) {
-          throw new Error(
-            responseData.message ||
-            responseData.error ||
-            '保存が拒否されました'
-          );
-        }
-
-        const receivedVersion = extractVersion(responseData);
-
-        if (receivedVersion !== '') {
-          currentDataVersion = receivedVersion;
-        }
+        status.textContent = '';
       } catch (error) {
-        targetRoom[columnKey] = previousValue;
-
-        if (element.type === 'checkbox') {
-          element.checked = isTrue(previousValue);
-        } else {
-          element.value = previousValue ?? '';
-        }
-
-        if (roomCard) {
-          roomCard.className =
-            'room-card ' + getRoomStatusClass(targetRoom);
-        }
-
+        for (const job of pendingSaves.reverse()) job.room[job.key] = job.previous;
+        pendingSaves.length = 0;
+        currentDataVersion = '';
+        renderAll();
         renderMapColors(allRoomsData);
-
-        const errorMessage =
-          error.name === 'AbortError'
-            ? '通信がタイムアウトしました'
-            : error.message;
-
-        alert(
-          '保存できなかったため、変更前の状態に戻しました。\n' +
-          errorMessage
-        );
+        status.textContent = '再確認が必要';
+        alert('保存を確認できなかった入力があります。最新状態を読み込み直します。\n' + error.message);
       } finally {
-        clearTimeout(timeoutId);
-
-        if (roomCard) {
-          roomCard.classList.remove('is-saving');
-          roomCard.removeAttribute('aria-busy');
-        }
+        saving = false;
+        if (!currentDataVersion) void loadData(true);
       }
     }
+
+    window.addEventListener('beforeunload', event => {
+      if (saving || pendingSaves.length) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    });
 
     document
       .getElementById('btn-map-toggle')
