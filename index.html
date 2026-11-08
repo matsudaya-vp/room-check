@@ -545,7 +545,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.15.0-ma3.6 テスト版</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.7 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -845,7 +845,11 @@
           options.body = JSON.stringify(data);
         }
         const response = await fetch(requestUrl.toString(), options);
-        if (!response.ok) throw new Error('HTTP ' + response.status);
+        if (!response.ok) {
+          const error = new Error('HTTP ' + response.status);
+          error.httpStatus = response.status;
+          throw error;
+        }
         try {
           return await response.json();
         } catch (error) {
@@ -1367,23 +1371,41 @@
 
     const updateColumns = { 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 10: 'J', 11: 'K', 12: 'L' };
     const pendingSaves = [];
+    const unconfirmedSaves = new Set();
+    const saveItemLabels = {
+      3: 'アーリー', 4: '忘れ物', 5: '茶器洗浄', 6: '備品補充',
+      7: 'クローゼット', 8: '摘要', 10: '点検', 11: '確認', 12: '出発'
+    };
     let saving = false;
     let saveGeneration = 0;
+
+    function updateSaveNotice(jobs, confirmed = false) {
+      for (const job of jobs) {
+        const item = `${job.room.A}号室 ${saveItemLabels[job.columnNumber]}`;
+        if (confirmed) unconfirmedSaves.delete(item);
+        else unconfirmedSaves.add(item);
+      }
+      const items = [...unconfirmedSaves];
+      document.getElementById('save-notice').textContent = items.length
+        ? `保存未確認：${items.join('、')}。紙に控え、復旧後に未反映分を入力してください。`
+        : '';
+    }
 
     function updateValue(element, rowNumber, columnNumber, selectedValue) {
       if (!Number.isInteger(rowNumber) || !Number.isInteger(columnNumber)) return;
       const key = updateColumns[columnNumber];
       const room = allRoomsData.find(item => Number(item.rowNumber) === rowNumber);
       if (!room || !key) return;
+      const value = selectedValue ?? (element.type === 'checkbox' ? element.checked : element.value);
+      if (room[key] === value) return;
       if (!currentDataVersion) {
+        updateSaveNotice([{ room, columnNumber }]);
         renderAll();
         document.getElementById('save-status').textContent = '読み込み後に再入力してください';
         void loadData(true);
         return;
       }
 
-      const value = selectedValue ?? (element.type === 'checkbox' ? element.checked : element.value);
-      if (room[key] === value) return;
       pendingSaves.push({ rowNumber, columnNumber, key, room, value, previous: room[key] });
       saveGeneration++;
       room[key] = value;
@@ -1398,45 +1420,93 @@
       if (!saving) void drainSaves();
     }
 
+    async function timedSaveCall(method, data) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+      try {
+        return await callServer(method, data, controller.signal);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function sendSave(payload) {
+      const result = await timedSaveCall('saveTestRoom', payload);
+      const version = extractVersion(result);
+      if (result?.success === true && typeof version === 'string' && version.trim()) return version;
+      const error = new Error(result?.message || '保存結果を確認できませんでした。');
+      error.code = isStaleResponse(result) ? 'STALE_DATA' : result?.code;
+      throw error;
+    }
+
+    function isTemporarySaveError(error) {
+      return error.name === 'AbortError' || error.name === 'TypeError' || error.code === 'BUSY' ||
+        error.httpStatus === 408 || error.httpStatus === 429 || error.httpStatus >= 500;
+    }
+
+    async function readSaveResult(job) {
+      const result = await timedSaveCall('loadTestRooms', false);
+      const version = extractVersion(result);
+      if (result?.success !== true || result.schema !== 'checknest-ma3' || result.apiVersion !== 2 ||
+          typeof version !== 'string' || !version.trim() || !Array.isArray(result.rooms)) {
+        throw new Error('保存結果の照合に必要なデータを取得できませんでした。');
+      }
+      const room = result.rooms.find(room => Number(room.rowNumber) === job.rowNumber);
+      if (!room || String(room.A) !== String(job.room.A)) throw new Error('客室情報が変わりました。');
+      return { version, reflected: room[job.key] === job.value };
+    }
+
+    async function saveWithRecovery(job, payload) {
+      try {
+        return await sendSave(payload);
+      } catch (error) {
+        if (!isTemporarySaveError(error)) throw error;
+        const latest = await readSaveResult(job);
+        if (latest.reflected) return null;
+        if (latest.version !== payload.version) throw error;
+      }
+
+      try {
+        return await sendSave(payload);
+      } catch (error) {
+        if ((await readSaveResult(job)).reflected) return null;
+        throw error;
+      }
+    }
+
     async function drainSaves() {
       saving = true;
       const status = document.getElementById('save-status');
-      const notice = document.getElementById('save-notice');
       status.textContent = '保存中…';
       try {
         while (pendingSaves.length) {
           const job = pendingSaves[0];
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
-          try {
-            const result = await callServer('saveTestRoom', {
-              row: job.rowNumber,
-              col: job.columnNumber,
-              val: job.value,
-              version: currentDataVersion
-            }, controller.signal);
-            if (isStaleResponse(result)) throw new Error('シートが別の操作で更新されました。');
-            const version = extractVersion(result);
-            if (result?.success !== true || typeof version !== 'string' || !version.trim()) {
-              throw new Error(result?.message || '保存結果を確認できませんでした。');
-            }
-            currentDataVersion = version;
-            pendingSaves.shift();
-          } finally {
-            clearTimeout(timer);
+          const version = await saveWithRecovery(job, {
+            row: job.rowNumber,
+            col: job.columnNumber,
+            val: job.value,
+            version: currentDataVersion
+          });
+          pendingSaves.shift();
+          updateSaveNotice([job], true);
+          if (version === null) {
+            // A read confirmed this field. Refresh before sending any other edits.
+            if (pendingSaves.length) throw new Error('残りの入力は最新データの確認が必要です。');
+            currentDataVersion = '';
+            break;
           }
+          currentDataVersion = version;
         }
         status.textContent = '';
-        notice.textContent = '';
       } catch (error) {
         console.error(error);
+        updateSaveNotice(pendingSaves);
         for (const job of pendingSaves.reverse()) job.room[job.key] = job.previous;
         pendingSaves.length = 0;
         currentDataVersion = '';
         renderAll();
         renderMapColors(allRoomsData);
         status.textContent = '再読み込み中…';
-        notice.textContent = '保存を確認できなかった入力があります。反映されていない項目は入力し直してください。';
       } finally {
         saving = false;
         if (!currentDataVersion) void loadData(true);
