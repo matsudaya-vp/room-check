@@ -555,7 +555,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.15.0-ma3.10 テスト版</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.11 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -1235,7 +1235,7 @@
               </div>
               <button class="header-check-label staff-action ${isCompleted ? 'is-recorded' : ''}" type="button"
                 onclick="openStaffPicker(${rowNumber}, 10)">
-                <span class="staff-action-role">点検</span>
+                <span class="staff-action-role">点検者</span>
                 <span class="staff-action-name">${isCompleted ? escapeHtml(currentInspector) : '選ぶ'}</span>
               </button>
             </div>
@@ -1320,7 +1320,7 @@
                 </div>
                 <div class="bottom-select-group group-checker">
                   <button class="staff-trigger staff-action ${isBlankChoice(currentChecker) ? '' : 'is-recorded'}" type="button" onclick="openStaffPicker(${rowNumber}, 11)">
-                    <span class="staff-action-role">確認</span>
+                    <span class="staff-action-role">確認者</span>
                     <span class="staff-action-name">${isBlankChoice(currentChecker) ? '選ぶ' : escapeHtml(currentChecker)}</span>
                   </button>
                 </div>
