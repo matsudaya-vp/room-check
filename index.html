@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CheckNest 客室点検アプリ</title>
   <style>
+    :root {
+      --standby-background: #faf8f2;
+    }
     * {
       box-sizing: border-box;
     }
@@ -100,7 +103,7 @@
     }
 
     .status-standby {
-      background: #faf8f2;
+      background: var(--standby-background);
       border-left-color: #9a9587;
       --status-button: #6a6151;
     }
@@ -477,7 +480,7 @@
     }
 
     .legend-standby {
-      background: #e2e8f0;
+      background: var(--standby-background);
       border-color: #cbd5e0;
     }
 
@@ -555,7 +558,7 @@
     <div id="room-list-container">
       <div class="loading">客室データを読み込み中...</div>
     </div>
-    <div class="version-info">CheckNest Ver.15.0-ma3.11 テスト版</div>
+    <div class="version-info">CheckNest Ver.15.0-ma3.12 テスト版</div>
   </div>
 
   <button id="btn-map-toggle" type="button" style="position:fixed; bottom:20px; right:20px; z-index:999; padding:12px 20px; background:#4a5568; color:#fff; border-radius:50px; border:0; font-weight:bold; box-shadow:0 4px 10px #0005;">
@@ -1056,7 +1059,7 @@
           border: '#296296'
         },
         'status-standby': {
-          background: '#e2e8f0',
+          background: 'var(--standby-background)',
           text: '#2d3748',
           border: '#cbd5e0'
         },
